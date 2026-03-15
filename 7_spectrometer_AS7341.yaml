@@ -1,0 +1,12 @@
+esphome:
+  name: my-device
+
+esp32:
+  variant: esp32c6
+
+i2c:
+  sda: 6
+  scl: 7
+  scan: true
+
+
