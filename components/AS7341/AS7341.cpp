@@ -1,10 +1,10 @@
-#include "empty_i2c_sensor.h"
+#include "AS7341.h"
 #include "esphome/core/log.h"
 
 namespace esphome {
-namespace empty_i2c_sensor {
+namespace AS7341 {
 
-static const char *TAG = "empty_i2c_sensor.sensor";
+static const char *TAG = "AS7341.sensor";
 
 void EmptyI2CSensor::setup() {
   // I2C device initialization is typically done here.
