@@ -1,3 +1,6 @@
+external_components:
+  source: components
+
 esphome:
   name: my-device
 
@@ -9,4 +12,12 @@ i2c:
   scl: 7
   scan: true
 
+sensor:
 
+as7341:
+  id: elespectrometro
+  address: 0x39  # optional
+
+logger:
+  level: VERY_VERBOSE # Options: NONE, ERROR, WARN, INFO, DEBUG, VERBOSE, VERY_VERBOSE
+  # baud_rate: 0 # Uncomment to disable serial loggingr
