@@ -38,6 +38,7 @@ class AS7341Component : public PollingComponent,
   short setGPIOMode(bool input);
   short setMeasurementMode(uint8_t mode);
   short enableSpectralMeasuring(bool enable);
+  short isMeasureOver();
 };
 
 }  // namespace as7341

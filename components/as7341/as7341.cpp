@@ -189,7 +189,7 @@ short AS7341Component::toggleRegisterBit(uint16_t registro, uint16_t bit, bool e
     return 0;
 }
 short AS7341Component::enableSpectralMeasure(bool enable) {
-  this->toggleRegisterBit(0x80,0,enable);
+  this->toggleRegisterBit(0x80,1,enable);
   return 0;
 }
 
@@ -198,10 +198,7 @@ short AS7341Component::enableSMUX(bool enable) {
   return 0;
 }
 
-short AS7341Component::enableSpectralMeasuring(bool enable) {
-  this->toggleRegisterBit(0x80,1,enable);
-  return 0;
-}
+
 
 short AS7341Component::enableLowPowerMode(bool toggle){
   this->toggleRegisterBit(0xA9, 5, toggle);
@@ -321,6 +318,15 @@ short AS7341Component::setMeasurementMode(uint8_t mode) {
   return 0;
 }
 
+short AS7341Component::isMeasureOver() {
+  uint8_t status = 0;
+  if (this->read_register(0xA3, &status, 1) != i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "Error leyendo STATUS_2");
+    return -1;
+  }
+  return (status & (1 << 6)) != 0;
+}
+
 #define MEASURE_CH1_TO_CH5 0
 #define MEASURE_CH6_TO_CH8 1
 
@@ -360,10 +366,14 @@ short AS7341Component::measureSpectrum(int8_t chToMeasure,int8_t measuringDurati
   }
 
   this->enableSMUX(true);
-  this->enableSpectralMeasuring(true);
+  this->enableSpectralMeasure(true);
 
-
-
+  if(measuringDurationMode==MEASURE_DURATION_EXTERNAL_GPIO_PULSE){
+    while(!this->isMeasureOver()){
+      delay(1);
+    }
+  }
+  ESP_LOGI(TAG, "Se ha finalizado una lectura espectral: %d/2",(chToMeasure+1));
   return 0;
 }
 
@@ -415,6 +425,8 @@ void AS7341Component::setup() {
 
 void AS7341Component::update() {
   this->measureSpectrum(MEASURE_CH1_TO_CH5,MEASURE_DURATION_DEFAULT);
+
+  this->measureSpectrum(MEASURE_CH6_TO_CH8,MEASURE_DURATION_DEFAULT);
 
 }
 
