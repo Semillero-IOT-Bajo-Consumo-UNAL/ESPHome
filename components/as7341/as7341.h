@@ -1,7 +1,33 @@
+//
+// as7341.h : ESPHOME driver for as7341 Spectrometer
+//
+// Copyright 2026 Santiago Valderrama M -  Daniel J Palacio M  
+//
+// released under MIT License (see file)
+//
+
+
+
 #pragma once
 #include "esphome/core/component.h"
 #include "esphome/components/i2c/i2c.h"
 #include "esphome/components/sensor/sensor.h" 
+
+
+typedef struct{
+    uint16_t channel1;/**<channel1 diode data>*/
+    uint16_t channel2;/**<channel2 diode data>*/
+    uint16_t channel3;/**<channel3 diode data>*/
+    uint16_t channel4;/**<channel4 diode data>*/
+    uint16_t channel5;/**<channel5 diode data>*/
+    uint16_t channel6;/**<channel6 diode data>*/
+    uint16_t channel7;/**<channel7 diode data>*/
+    uint16_t channel8;/**<channel8 diode data>*/
+    uint16_t CLEAR;/**<clear diode data>*/
+    uint16_t NIR;/**<NIR diode data>*/
+  }spectralMeasure;
+
+
 namespace esphome {
 namespace as7341 {
 
@@ -39,6 +65,9 @@ class AS7341Component : public PollingComponent,
   short setMeasurementMode(uint8_t mode);
   short enableSpectralMeasuring(bool enable);
   short isMeasureOver();
+  short getChannelData(uint8_t channel, uint16_t &data);
+  short getMeasurementData(bool firstHalf, spectralMeasure &datos);
+  void logMeasurement(const spectralMeasure &datos);
 };
 
 }  // namespace as7341

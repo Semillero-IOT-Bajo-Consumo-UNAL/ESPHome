@@ -19,5 +19,5 @@ as7341:
   address: 0x39  # optional
 
 logger:
-  level: VERY_VERBOSE # Options: NONE, ERROR, WARN, INFO, DEBUG, VERBOSE, VERY_VERBOSE
+  level: DEBUG # Options: NONE, ERROR, WARN, INFO, DEBUG, VERBOSE, VERY_VERBOSE
   # baud_rate: 0 # Uncomment to disable serial loggingr

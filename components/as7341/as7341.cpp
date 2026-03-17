@@ -1,3 +1,12 @@
+//
+// as7341.cpp : ESPHOME driver for as7341 Spectrometer
+//
+// Copyright 2026 Santiago Valderrama M -  Daniel J Palacio M  
+//
+// released under MIT License (see file)
+//
+
+
 #include "as7341.h"
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
@@ -35,6 +44,7 @@ short AS7341Component::turnOnDevice() {
   return 0;
 }
 
+//TODO: Poner esta informacion que sea configurable en el YAML.
 
 short AS7341Component::setIntegrationSteps(uint8_t integrationSteps) {
   uint8_t bit = integrationSteps;
@@ -44,6 +54,27 @@ short AS7341Component::setIntegrationSteps(uint8_t integrationSteps) {
   }
   return 0;
 }
+
+#define REGISTRO_DATOS_CH0_L 0x95
+#define REGISTRO_DATOS_CH0_H 0x96
+
+short AS7341Component::getChannelData(uint8_t channel, uint16_t &data) {
+  uint8_t low = 0, high = 0;
+
+  if (this->read_register(REGISTRO_DATOS_CH0_L + channel * 2, &low, 1) != i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "Error leyendo byte bajo canal %d", channel);
+    return -1;
+  }
+  if (this->read_register(REGISTRO_DATOS_CH0_H + channel * 2, &high, 1) != i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "Error leyendo byte alto canal %d", channel);
+    return -1;
+  }
+
+  data = (uint16_t(high) << 8) | low;
+  delay(50);
+  return 0;
+}
+
 
 short AS7341Component::setIntegrationTime(uint16_t integrationTime) {
   if (integrationTime > 65534) {
@@ -368,9 +399,12 @@ short AS7341Component::measureSpectrum(int8_t chToMeasure,int8_t measuringDurati
   this->enableSMUX(true);
   this->enableSpectralMeasure(true);
 
-  if(measuringDurationMode==MEASURE_DURATION_EXTERNAL_GPIO_PULSE){
-    while(!this->isMeasureOver()){
-      delay(1);
+  uint16_t timeout = 1000;  // máximo 1 segundo
+  while(!this->isMeasureOver()) {
+    delay(1);
+    if(--timeout == 0) {
+      ESP_LOGE(TAG, "Timeout esperando medicion espectral");
+      return -1;
     }
   }
   ESP_LOGI(TAG, "Se ha finalizado una lectura espectral: %d/2",(chToMeasure+1));
@@ -381,10 +415,39 @@ short AS7341Component::measureSpectrum(int8_t chToMeasure,int8_t measuringDurati
 
 
 
+// TODO: Sanity checks ksjksjskj
+short AS7341Component::getMeasurementData(bool firstHalf,spectralMeasure &datos) {
+  if(firstHalf){
+    this->getChannelData(0,datos.channel1);
+    this->getChannelData(1,datos.channel2);
+    this->getChannelData(2,datos.channel3);
+    this->getChannelData(3,datos.channel4);
+    this->getChannelData(4,datos.CLEAR);
+    this->getChannelData(5,datos.NIR);
+  }else{
+    this->getChannelData(0,datos.channel5);
+    this->getChannelData(1,datos.channel6);
+    this->getChannelData(2,datos.channel7);
+    this->getChannelData(3,datos.channel8);
+    this->getChannelData(4,datos.CLEAR);
+    this->getChannelData(5,datos.NIR);
+  }
+  return 0;
+}
 
-
-
-
+void AS7341Component::logMeasurement(const spectralMeasure &datos) {
+  ESP_LOGI(TAG, "=== Medicion espectral ===");
+  ESP_LOGI(TAG, "  F1 (410nm): %d", datos.channel1);
+  ESP_LOGI(TAG, "  F2 (440nm): %d", datos.channel2);
+  ESP_LOGI(TAG, "  F3 (470nm): %d", datos.channel3);
+  ESP_LOGI(TAG, "  F4 (510nm): %d", datos.channel4);
+  ESP_LOGI(TAG, "  F5 (550nm): %d", datos.channel5);
+  ESP_LOGI(TAG, "  F6 (583nm): %d", datos.channel6);
+  ESP_LOGI(TAG, "  F7 (620nm): %d", datos.channel7);
+  ESP_LOGI(TAG, "  F8 (670nm): %d", datos.channel8);
+  ESP_LOGI(TAG, "  CLEAR:      %d", datos.CLEAR);
+  ESP_LOGI(TAG, "  NIR:        %d", datos.NIR);
+}
 
 // TODO: Chequeos de sanidad en la escritura de los registros
 // TODO: Cargar informacion desde el YAML
@@ -424,11 +487,18 @@ void AS7341Component::setup() {
   
 
 void AS7341Component::update() {
-  this->controlLED(true,18);
-  this->measureSpectrum(MEASURE_CH1_TO_CH5,MEASURE_DURATION_DEFAULT);
+  spectralMeasure measuredData = {0};
 
-  this->measureSpectrum(MEASURE_CH6_TO_CH8,MEASURE_DURATION_DEFAULT);
+  this->controlLED(true,18); 
+    this->measureSpectrum(MEASURE_CH1_TO_CH5,MEASURE_DURATION_DEFAULT);
+    this->getMeasurementData(true,measuredData);
+    this->measureSpectrum(MEASURE_CH6_TO_CH8,MEASURE_DURATION_DEFAULT);
+    this->getMeasurementData(false,measuredData);
   this->controlLED(false,0);
+
+
+
+  this->logMeasurement(measuredData);
 }
 
 void AS7341Component::dump_config() {
