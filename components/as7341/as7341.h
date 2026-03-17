@@ -30,6 +30,14 @@ class AS7341Component : public PollingComponent,
   short enableLowPowerMode(bool toggle);
   short enableSpectralMeasure(bool enable);
   short toggleRegisterBit(uint16_t registro, uint16_t bit, bool enable);
+  short measureSpectrum(int8_t chToMeasure,int8_t measuringDurationMode);
+  short setSMUXCommand(uint8_t smux_cmd);
+  short configureSMUX_F1F4_Clear_NIR();
+  short configureSMUX_F5F8_Clear_NIR();
+  short enableSMUX(bool enable);
+  short setGPIOMode(bool input);
+  short setMeasurementMode(uint8_t mode);
+  short enableSpectralMeasuring(bool enable);
 };
 
 }  // namespace as7341
