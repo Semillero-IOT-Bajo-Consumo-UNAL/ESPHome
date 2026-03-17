@@ -3,7 +3,7 @@
 //
 // Copyright 2026 Santiago Valderrama M -  Daniel J Palacio M  
 //
-// released under MIT License (see file)
+// released under GNU General Public License v3.0 (see file)
 //
 
 
