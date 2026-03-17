@@ -5,6 +5,7 @@
 #define REGISTRO_BANCO_AUXILIAR            0xA9  // CFG0 - selección de banco
 #define REGISTRO_CONFIGURACIONES_GENERALES 0x70  // CONFIG - habilitar LED
 #define REGISTRO_CONFIGURACIONES_LED       0x74  // LED - intensidad y encendido
+#define REGISTRO_CONFIGURACIONES_INICIALES 0x80  // LED - intensidad y encendido
 
 
 namespace esphome {
@@ -12,9 +13,12 @@ namespace as7341 {
 
 static const char *TAG = "as7341";
 
+
+
+
 short AS7341Component::checkPowerOn() {
   uint8_t enable_reg = 0;
-  if (this->read_register(0x80, &enable_reg, 1) != i2c::ERROR_OK) {
+  if (this->read_register(REGISTRO_CONFIGURACIONES_INICIALES, &enable_reg, 1) != i2c::ERROR_OK) {
     ESP_LOGE(TAG, "Error leyendo registro ENABLE");
     return -1;
   }  
@@ -23,7 +27,7 @@ short AS7341Component::checkPowerOn() {
 
 short AS7341Component::turnOnDevice() {
   uint8_t bit = 0x01;
-  if (this->write_register(0x80, &bit, 1) != i2c::ERROR_OK){
+  if (this->write_register(REGISTRO_CONFIGURACIONES_INICIALES, &bit, 1) != i2c::ERROR_OK){
     ESP_LOGE(TAG, "Error escribiendo registro");
     return -1;
   }
@@ -162,30 +166,45 @@ short AS7341Component::controlLED(bool enabled, uint8_t current) {
 }
 
 
-short AS7341Component::enableSpectralMeasure(bool enable) {
+short AS7341Component::toggleRegisterBit(uint16_t registro, uint16_t bit, bool enable) {
+    uint8_t enable_reg = 0;
 
-  uint8_t enable_reg = 0;
-  if (this->read_register(0x80, &enable_reg, 1) != i2c::ERROR_OK) {
-    ESP_LOGE(TAG, "Error leyendo registro de configuracion");
-    return -1;
-  }  
-
-  if (enable) {
-        enable_reg |= (1 << 1);
-    } else {
-        enable_reg &= ~(1 << 1);
+    if (this->read_register(registro, &enable_reg, 1) != i2c::ERROR_OK) {
+        ESP_LOGE(TAG, "Error leyendo registro de configuracion");
+        return -1;
     }
 
-  if (this->write_register(0x80, &enable_reg, 1) != i2c::ERROR_OK){
-    ESP_LOGE(TAG, "Error habilitando modo de lectura!");
-    return -1;
-  }
+    if (enable) {
+        enable_reg |= (1U << bit);
+    } else {
+        enable_reg &= ~(1U << bit);
+    }
+
+    if (this->write_register(registro, &enable_reg, 1) != i2c::ERROR_OK) {
+        ESP_LOGE(TAG, "Error habilitando modo de lectura!");
+        return -1;
+    }
+
+    return 0;
+}
+short AS7341Component::enableSpectralMeasure(bool enable) {
+  this->toggleRegisterBit(0x80,0,enable);
   return 0;
 }
 
+short AS7341Component::enableLowPowerMode(bool toggle){
+  this->toggleRegisterBit(0xA9, 5, toggle);
+  return 0;
+}
+
+
+
+
+
 short AS7341Component::measureSpectrum(){
-
-
+  this->enableLowPowerMode(false);
+  this->enableSpectralMeasure(false);
+  return 0;
 }
 
 
@@ -235,11 +254,7 @@ void AS7341Component::setup() {
   
 
 void AS7341Component::update() {
-  // Detiene cualquier lectura por seguridad
-  
-  //this->enableSpectralMeasure(false);
-  // Sigo revisando esto mañana porque lo del SMUX no lo entiende ni DIOS XDDDDDDD
-  // son las 11:30 y llevo un buen tiempo programando
+  this->measureSpectrum();
 
 }
 

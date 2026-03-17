@@ -26,6 +26,10 @@ class AS7341Component : public PollingComponent,
   short selectAuxiliaryBank(bool enable);
   short enableLED(bool flag);
   short controlLED(bool enabled, uint8_t current);
+  short measureSpectrum();
+  short enableLowPowerMode(bool toggle);
+  short enableSpectralMeasure(bool enable);
+  short toggleRegisterBit(uint16_t registro, uint16_t bit, bool enable);
 };
 
 }  // namespace as7341
