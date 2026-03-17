@@ -424,10 +424,11 @@ void AS7341Component::setup() {
   
 
 void AS7341Component::update() {
+  this->controlLED(true,18);
   this->measureSpectrum(MEASURE_CH1_TO_CH5,MEASURE_DURATION_DEFAULT);
 
   this->measureSpectrum(MEASURE_CH6_TO_CH8,MEASURE_DURATION_DEFAULT);
-
+  this->controlLED(false,0);
 }
 
 void AS7341Component::dump_config() {

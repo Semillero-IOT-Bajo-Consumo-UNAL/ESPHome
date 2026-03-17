@@ -20,7 +20,7 @@ CONFIG_SCHEMA = (
     .extend({
         cv.GenerateID(): cv.declare_id(AS7341Component),
     })
-    .extend(cv.polling_component_schema("60s"))
+    .extend(cv.polling_component_schema("5s"))
     .extend(i2c.i2c_device_schema(0x39))
 )
 
