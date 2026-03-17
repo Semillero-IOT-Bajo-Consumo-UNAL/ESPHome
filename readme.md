@@ -1,6 +1,18 @@
 # Instalacion en Linux
 
-Para instalar el entorno de esphome
+Para instalar esphome primero nos metemos en una carpeta 
+
+## 0. Crear la carpeta
+
+```
+mkdir esphome
+```
+## 0.5. entrar en la carpeta
+
+```
+cd esphome
+```
+
 
 ## 1. Se crea el entorno
 ```
