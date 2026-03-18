@@ -1,11 +1,3 @@
-```yaml
-# example configuration:
+# Espectrometro AS7341
 
-sensor:
-  - platform: empty_i2c_sensor
-    name: Empty I2C sensor
-
-i2c:
-  sda: 4
-  scl: 5
-```
+Driver para el Espectrometro AS7341 para ESPHome desarrollado por Santiago Valderrama M -  Daniel J Palacio M en el 2026 bajo la licencia GNU General Public License v3.0.
