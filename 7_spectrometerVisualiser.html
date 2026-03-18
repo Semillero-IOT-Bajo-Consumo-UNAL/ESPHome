@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>AS7341 Spectral Monitor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --panel: #11111a;
+    --border: #1e1e2e;
+    --accent: #00ff88;
+    --dim: #2a2a3e;
+    --text: #c8c8e0;
+    --text-dim: #555570;
+
+    /* Colores espectrales por canal */
+    --c1: #9b59f5;   /* 410nm - violeta */
+    --c2: #6e8ef7;   /* 440nm - azul violáceo */
+    --c3: #4fa8ff;   /* 470nm - azul */
+    --c4: #3dcf8e;   /* 510nm - verde azulado */
+    --c5: #a8e63d;   /* 550nm - verde amarillo */
+    --c6: #f5d63d;   /* 583nm - amarillo */
+    --c7: #ff8c3d;   /* 620nm - naranja */
+    --c8: #ff3d3d;   /* 670nm - rojo */
+    --cc: #aaaacc;   /* CLEAR */
+    --cn: #884499;   /* NIR */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* Scanline effect */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--text-dim); font-weight: 400; }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: background 0.3s;
+  }
+  .dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .dot.error { background: #ff4444; }
+
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: 1fr auto;
+    gap: 0;
+    height: calc(100vh - 57px);
+  }
+
+  /* Chart area */
+  .chart-area {
+    padding: 32px 32px 24px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+  }
+
+  .chart-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .chart-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    position: relative;
+    padding-bottom: 40px;
+    padding-left: 52px;
+  }
+
+  /* Y axis grid */
+  .y-grid {
+    position: absolute;
+    left: 52px; right: 0; top: 0; bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .y-line {
+    width: 100%;
+    border-top: 1px solid var(--dim);
+    position: relative;
+  }
+
+  .y-label {
+    position: absolute;
+    left: -50px;
+    top: -8px;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    width: 44px;
+    text-align: right;
+  }
+
+  /* Bars container */
+  .bars {
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+    height: 100%;
+    gap: 8px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .bar-value {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    transition: color 0.3s;
+    min-height: 14px;
+    text-align: center;
+  }
+
+  .bar {
+    width: 100%;
+    min-height: 2px;
+    border-radius: 3px 3px 0 0;
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+    position: relative;
+    opacity: 0.85;
+  }
+
+  .bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 40%;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px 3px 0 0;
+  }
+
+  .bar:hover { opacity: 1; }
+
+  .bar-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .bar-label .nm {
+    display: block;
+    color: var(--text);
+    font-size: 0.65rem;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+  }
+
+  .sidebar-section {
+    padding: 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+  .btn.danger:hover { border-color: #ff4444; color: #ff4444; }
+
+  .channel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .channel-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.7rem;
+  }
+
+  .ch-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ch-name {
+    flex: 1;
+    color: var(--text-dim);
+  }
+
+  .ch-val {
+    font-size: 0.75rem;
+    color: var(--text);
+    min-width: 50px;
+    text-align: right;
+    letter-spacing: 0.05em;
+  }
+
+  /* Serial log */
+  .log-area {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .log-header {
+    padding: 14px 20px 8px;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .log-clear {
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: none;
+    border: none;
+    font-family: inherit;
+    transition: color 0.2s;
+  }
+  .log-clear:hover { color: #ff4444; }
+
+  #log {
+    flex: 1;
+    overflow-y: scroll;
+    padding: 10px 16px;
+    font-size: 0.65rem;
+    line-height: 1.7;
+    max-height: 300px;
+    color: var(--text-dim);
+  }
+
+  #log::-webkit-scrollbar { width: 4px; }
+  #log::-webkit-scrollbar-track { background: transparent; }
+  #log::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
+  .log-line { margin-bottom: 1px; }
+  .log-line.highlight { color: var(--accent); }
+  .log-line.error { color: #ff6666; }
+
+  /* No serial support warning */
+  #no-serial {
+    display: none;
+    background: #1a0a0a;
+    border: 1px solid #ff4444;
+    color: #ff6666;
+    padding: 12px 16px;
+    font-size: 0.7rem;
+    margin: 12px;
+    border-radius: 4px;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AS7341 <span>/ Spectral Monitor</span></div>
+  <div class="status-bar">
+    <div class="dot" id="dot"></div>
+    <span id="status-text">DESCONECTADO</span>
+    <span id="baud-label" style="color:var(--text-dim)">115200 baud</span>
+  </div>
+</header>
+
+<div id="no-serial">
+  ⚠ Tu navegador no soporta Web Serial API. Usa Chrome o Edge (versión 89+) y asegúrate de estar en HTTPS o localhost.
+</div>
+
+<div class="main">
+
+  <!-- Chart -->
+  <div class="chart-area">
+    <div class="chart-title">Intensidad espectral — counts raw</div>
+    <div class="chart-wrapper">
+      <div class="y-grid" id="y-grid"></div>
+      <div class="bars" id="bars"></div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Puerto serial</div>
+      <button class="btn" id="btn-connect">Conectar puerto</button>
+      <button class="btn danger" id="btn-disconnect" style="display:none">Desconectar</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Canales</div>
+      <div class="channel-list" id="channel-list"></div>
+    </div>
+
+    <div class="log-area">
+      <div class="log-header">
+        <span>Log serial</span>
+        <button class="log-clear" onclick="clearLog()">limpiar</button>
+      </div>
+      <div id="log"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const CHANNELS = [
+  { key: 'F1', nm: '410', label: 'F1', color: 'var(--c1)' },
+  { key: 'F2', nm: '440', label: 'F2', color: 'var(--c2)' },
+  { key: 'F3', nm: '470', label: 'F3', color: 'var(--c3)' },
+  { key: 'F4', nm: '510', label: 'F4', color: 'var(--c4)' },
+  { key: 'F5', nm: '550', label: 'F5', color: 'var(--c5)' },
+  { key: 'F6', nm: '583', label: 'F6', color: 'var(--c6)' },
+  { key: 'F7', nm: '620', label: 'F7', color: 'var(--c7)' },
+  { key: 'F8', nm: '670', label: 'F8', color: 'var(--c8)' },
+  { key: 'CLEAR', nm: 'CLR', label: 'CLR', color: 'var(--cc)' },
+  { key: 'NIR',   nm: 'NIR', label: 'NIR', color: 'var(--cn)' },
+];
+
+// Regex para parsear las líneas del log ESP
+// Acepta tanto:  F1 (410nm): 1234   como   CLEAR:      1234   y   NIR:        1234
+const LINE_PATTERNS = [
+  { re: /F1\s*\(410nm\):\s*(\d+)/i,   key: 'F1' },
+  { re: /F2\s*\(440nm\):\s*(\d+)/i,   key: 'F2' },
+  { re: /F3\s*\(470nm\):\s*(\d+)/i,   key: 'F3' },
+  { re: /F4\s*\(510nm\):\s*(\d+)/i,   key: 'F4' },
+  { re: /F5\s*\(550nm\):\s*(\d+)/i,   key: 'F5' },
+  { re: /F6\s*\(583nm\):\s*(\d+)/i,   key: 'F6' },
+  { re: /F7\s*\(620nm\):\s*(\d+)/i,   key: 'F7' },
+  { re: /F8\s*\(670nm\):\s*(\d+)/i,   key: 'F8' },
+  { re: /CLEAR:\s*(\d+)/i,             key: 'CLEAR' },
+  { re: /NIR:\s*(\d+)/i,               key: 'NIR' },
+];
+
+let values = {};
+CHANNELS.forEach(c => values[c.key] = 0);
+
+let pendingMeasure = {};
+let port = null, reader = null;
+
+// ── Build chart ──────────────────────────────────────────────────────────────
+function buildChart() {
+  const barsEl = document.getElementById('bars');
+  barsEl.innerHTML = '';
+  CHANNELS.forEach(ch => {
+    const group = document.createElement('div');
+    group.className = 'bar-group';
+    group.innerHTML = `
+      <div class="bar-value" id="val-${ch.key}">—</div>
+      <div class="bar" id="bar-${ch.key}" style="height:2px;background:${ch.color}"></div>
+      <div class="bar-label"><span class="nm">${ch.label}</span>${ch.nm}</div>
+    `;
+    barsEl.appendChild(group);
+  });
+  buildYGrid();
+}
+
+function buildYGrid() {
+  const grid = document.getElementById('y-grid');
+  grid.innerHTML = '';
+  const steps = [0, 0.25, 0.5, 0.75, 1.0];
+  steps.reverse().forEach(s => {
+    const line = document.createElement('div');
+    line.className = 'y-line';
+    const lbl = document.createElement('span');
+    lbl.className = 'y-label';
+    lbl.id = `y-label-${s}`;
+    lbl.textContent = '—';
+    line.appendChild(lbl);
+    grid.appendChild(line);
+  });
+}
+
+// ── Build sidebar channel list ───────────────────────────────────────────────
+function buildChannelList() {
+  const list = document.getElementById('channel-list');
+  list.innerHTML = '';
+  CHANNELS.forEach(ch => {
+    const row = document.createElement('div');
+    row.className = 'channel-row';
+    row.innerHTML = `
+      <div class="ch-dot" style="background:${ch.color}"></div>
+      <div class="ch-name">${ch.label} ${ch.nm !== ch.label ? ch.nm+'nm' : ''}</div>
+      <div class="ch-val" id="side-${ch.key}">—</div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// ── Update chart with current values ────────────────────────────────────────
+function updateChart() {
+  const vals = CHANNELS.map(c => values[c.key]);
+  const maxVal = Math.max(...vals, 1);
+
+  // Y grid labels
+  const steps = [0, 0.25, 0.5, 0.75, 1.0];
+  steps.reverse().forEach(s => {
+    const lbl = document.getElementById(`y-label-${s}`);
+    if (lbl) lbl.textContent = Math.round(maxVal * s).toLocaleString();
+  });
+
+  CHANNELS.forEach(ch => {
+    const v = values[ch.key];
+    const pct = maxVal > 0 ? (v / maxVal) : 0;
+    const barEl = document.getElementById(`bar-${ch.key}`);
+    const valEl = document.getElementById(`val-${ch.key}`);
+    const sideEl = document.getElementById(`side-${ch.key}`);
+    if (barEl) {
+      // altura relativa al contenedor — usamos calc con CSS custom property
+      barEl.style.height = `calc(${pct * 100}% - 20px)`;
+    }
+    if (valEl) valEl.textContent = v > 0 ? v.toLocaleString() : '—';
+    if (sideEl) sideEl.textContent = v > 0 ? v.toLocaleString() : '—';
+  });
+}
+
+// ── Parse incoming serial line ───────────────────────────────────────────────
+function parseLine(line) {
+  addLog(line);
+
+  if (line.includes('Medicion espectral')) {
+    pendingMeasure = {};
+    return;
+  }
+
+  for (const p of LINE_PATTERNS) {
+    const m = line.match(p.re);
+    if (m) {
+      pendingMeasure[p.key] = parseInt(m[1], 10);
+      // Si completamos todos los canales, actualizar
+      if (Object.keys(pendingMeasure).length === CHANNELS.length) {
+        CHANNELS.forEach(c => values[c.key] = pendingMeasure[c.key] ?? 0);
+        updateChart();
+        pendingMeasure = {};
+      }
+      return;
+    }
+  }
+}
+
+// ── Log ──────────────────────────────────────────────────────────────────────
+const logEl = document.getElementById('log');
+function addLog(text, type = '') {
+  const line = document.createElement('div');
+  line.className = 'log-line' + (type ? ' ' + type : '');
+  line.textContent = text;
+  logEl.appendChild(line);
+  // Keep last 300 lines
+  while (logEl.children.length > 300) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function clearLog() { logEl.innerHTML = ''; }
+
+// ── Web Serial ───────────────────────────────────────────────────────────────
+const btnConnect    = document.getElementById('btn-connect');
+const btnDisconnect = document.getElementById('btn-disconnect');
+const dot           = document.getElementById('dot');
+const statusText    = document.getElementById('status-text');
+
+function setStatus(state) {
+  dot.className = 'dot ' + (state === 'ok' ? 'connected' : state === 'err' ? 'error' : '');
+  statusText.textContent = state === 'ok' ? 'CONECTADO' : state === 'err' ? 'ERROR' : 'DESCONECTADO';
+  btnConnect.style.display    = state === 'ok' ? 'none' : 'block';
+  btnDisconnect.style.display = state === 'ok' ? 'block' : 'none';
+}
+
+btnConnect.addEventListener('click', async () => {
+  if (!('serial' in navigator)) {
+    document.getElementById('no-serial').style.display = 'block';
+    return;
+  }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    setStatus('ok');
+    addLog('[sistema] Puerto abierto a 115200 baud', 'highlight');
+    readLoop();
+  } catch (e) {
+    setStatus('err');
+    addLog('[error] ' + e.message, 'error');
+  }
+});
+
+btnDisconnect.addEventListener('click', async () => {
+  try {
+    if (reader) { await reader.cancel(); reader = null; }
+    if (port)   { await port.close();   port = null; }
+  } catch {}
+  setStatus('');
+  addLog('[sistema] Puerto cerrado', 'highlight');
+});
+
+async function readLoop() {
+  const decoder = new TextDecoderStream();
+  port.readable.pipeTo(decoder.writable);
+  reader = decoder.readable.getReader();
+  let buffer = '';
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += value;
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // last incomplete line stays in buffer
+      for (const line of lines) {
+        const clean = line.replace(/\r/g, '').trim();
+        if (clean) parseLine(clean);
+      }
+    }
+  } catch (e) {
+    if (port) addLog('[error] ' + e.message, 'error');
+  }
+  setStatus('');
+}
+
+// ── Check serial support ─────────────────────────────────────────────────────
+if (!('serial' in navigator)) {
+  document.getElementById('no-serial').style.display = 'block';
+  btnConnect.disabled = true;
+  btnConnect.textContent = 'No soportado';
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+buildChart();
+buildChannelList();
+updateChart();
+</script>
+</body>
+</html>
