@@ -70,6 +70,7 @@ class AS7341Component : public PollingComponent,
   void logMeasurement(const spectralMeasure &datos);
   short configureSMUX_Flicker();
   short detectFlickerHz(uint16_t &result);
+  void applySensitivityFactors(spectralMeasure &datos);
 };
 
 }  // namespace as7341

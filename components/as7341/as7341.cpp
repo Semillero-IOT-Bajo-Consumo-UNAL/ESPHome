@@ -505,6 +505,28 @@ void AS7341Component::logMeasurement(const spectralMeasure &datos) {
   ESP_LOGI(TAG, "  CLEAR:      %d", datos.CLEAR);
   ESP_LOGI(TAG, "  NIR:        %d", datos.NIR);
 }
+const float sensitivity_factors[8] = {
+    1350.0f / 55.0f,    // F1: ~24.5
+    1350.0f / 110.0f,   // F2: ~12.3
+    1350.0f / 210.0f,   // F3: ~6.4
+    1350.0f / 390.0f,   // F4: ~3.5
+    1350.0f / 590.0f,   // F5: ~2.3
+    1350.0f / 840.0f,   // F6: ~1.6
+    1350.0f / 1350.0f,  // F7: 1.0
+    1350.0f / 1070.0f,  // F8: ~1.3
+  };
+void AS7341Component::applySensitivityFactors(spectralMeasure &datos) {
+  
+  datos.channel1 = datos.channel1*sensitivity_factors[0];
+  datos.channel2 = datos.channel2*sensitivity_factors[1];
+  datos.channel3 = datos.channel3*sensitivity_factors[2];
+  datos.channel4 = datos.channel4*sensitivity_factors[3];
+  datos.channel5 = datos.channel5*sensitivity_factors[4];
+  datos.channel6 = datos.channel6*sensitivity_factors[5];
+  datos.channel7 = datos.channel7*sensitivity_factors[6];
+  datos.channel8 = datos.channel8*sensitivity_factors[7];
+
+}
 
 // TODO: Chequeos de sanidad en la escritura de los registros
 // TODO: Cargar informacion desde el YAML
@@ -554,6 +576,8 @@ void AS7341Component::update() {
   this->controlLED(false,0);
 
   this->detectFlickerHz(storedFlicker);
+
+  this->applySensitivityFactors(measuredData);
 
   this->logMeasurement(measuredData);
 }
