@@ -68,6 +68,8 @@ class AS7341Component : public PollingComponent,
   short getChannelData(uint8_t channel, uint16_t &data);
   short getMeasurementData(bool firstHalf, spectralMeasure &datos);
   void logMeasurement(const spectralMeasure &datos);
+  short configureSMUX_Flicker();
+  short detectFlickerHz(uint16_t &result);
 };
 
 }  // namespace as7341

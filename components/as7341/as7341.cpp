@@ -18,6 +18,9 @@
 #define REGISTRO_CONFIGURACION_MULTIPLEXOR 0xAF  // CONFIG SMUX - Cambia el modo del multiplexor conectado al ADC
 
 
+// TODO: Implmentar la medicion del flicker
+// TODO: Implementar el AGC para calibracion propia
+
 namespace esphome {
 namespace as7341 {
 
@@ -326,6 +329,60 @@ short AS7341Component::configureSMUX_F5F8_Clear_NIR() {
   return 0;
 }
 
+short AS7341Component::configureSMUX_Flicker() {
+  static const uint8_t register_values[][2] = {
+    {0x00, 0x00}, {0x01, 0x00}, {0x02, 0x00}, {0x03, 0x00},
+    {0x04, 0x00}, {0x05, 0x00}, {0x06, 0x00}, {0x07, 0x00},
+    {0x08, 0x00}, {0x09, 0x00}, {0x0A, 0x00}, {0x0B, 0x00},
+    {0x0C, 0x00}, {0x0D, 0x00}, {0x0E, 0x00}, {0x0F, 0x00},
+    {0x10, 0x00}, {0x11, 0x00}, {0x12, 0x00}, {0x13, 0x60}  // FLICKER → ADC5
+  };
+
+  for (size_t i = 0; i < sizeof(register_values) / sizeof(register_values[0]); i++) {
+    uint8_t val = register_values[i][1];
+    if (this->write_register(register_values[i][0], &val, 1) != i2c::ERROR_OK) {
+      ESP_LOGE(TAG, "Error escribiendo SMUX Flicker registro 0x%02X", register_values[i][0]);
+      return -1;
+    }
+  }
+  return 0;
+}
+
+short AS7341Component::detectFlickerHz(uint16_t &result) {
+  // Adafruit usa 0x41 = PON + FDEN directamente
+  this->enableSpectralMeasure(false);
+  this->setSMUXCommand(SMUX_CMD_WRITE);
+  this->configureSMUX_Flicker();
+  this->enableSMUX(true);
+  this->enableSpectralMeasure(true);
+  this->toggleRegisterBit(0x80, 6, true);  // FDEN = 1
+
+  delay(500);  // Adafruit usa 500ms — el flicker necesita tiempo para detectar
+
+  uint8_t fd_status = 0;
+  if (this->read_register(0xDB, &fd_status, 1) != i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "Error leyendo FD_STATUS");
+    this->toggleRegisterBit(0x80, 6, false);
+    return -1;
+  }
+
+  this->toggleRegisterBit(0x80, 6, false);  // deshabilitar FDEN
+
+  ESP_LOGD(TAG, "FD_STATUS = 0x%02X", fd_status);
+
+  // Adafruit mapea: 44 → frecuencia desconocida, 45 → 100Hz, 46 → 120Hz
+  switch (fd_status) {
+    case 44: result = 1;   break;  // flicker detectado, frecuencia desconocida
+    case 45: result = 100; break;
+    case 46: result = 120; break;
+    default: result = 0;   break;  // sin flicker
+  }
+
+  ESP_LOGI(TAG, "Flicker detectado: %d Hz", result);
+  return 0;
+}
+
+
 
 short AS7341Component::setMeasurementMode(uint8_t mode) {
   if (mode == 2 || mode > 3) {
@@ -488,7 +545,7 @@ void AS7341Component::setup() {
 
 void AS7341Component::update() {
   spectralMeasure measuredData = {0};
-
+  uint16_t storedFlicker = 0;
   this->controlLED(true,18); 
     this->measureSpectrum(MEASURE_CH1_TO_CH5,MEASURE_DURATION_DEFAULT);
     this->getMeasurementData(true,measuredData);
@@ -496,7 +553,7 @@ void AS7341Component::update() {
     this->getMeasurementData(false,measuredData);
   this->controlLED(false,0);
 
-
+  this->detectFlickerHz(storedFlicker);
 
   this->logMeasurement(measuredData);
 }
