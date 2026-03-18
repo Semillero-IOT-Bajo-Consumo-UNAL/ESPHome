@@ -15,16 +15,16 @@
 
 
 typedef struct{
-    uint16_t channel1;/**<channel1 diode data>*/
-    uint16_t channel2;/**<channel2 diode data>*/
-    uint16_t channel3;/**<channel3 diode data>*/
-    uint16_t channel4;/**<channel4 diode data>*/
-    uint16_t channel5;/**<channel5 diode data>*/
-    uint16_t channel6;/**<channel6 diode data>*/
-    uint16_t channel7;/**<channel7 diode data>*/
-    uint16_t channel8;/**<channel8 diode data>*/
-    uint16_t CLEAR;/**<clear diode data>*/
-    uint16_t NIR;/**<NIR diode data>*/
+    uint32_t channel1;/**<channel1 diode data>*/
+    uint32_t channel2;/**<channel2 diode data>*/
+    uint32_t channel3;/**<channel3 diode data>*/
+    uint32_t channel4;/**<channel4 diode data>*/
+    uint32_t channel5;/**<channel5 diode data>*/
+    uint32_t channel6;/**<channel6 diode data>*/
+    uint32_t channel7;/**<channel7 diode data>*/
+    uint32_t channel8;/**<channel8 diode data>*/
+    uint32_t CLEAR;/**<clear diode data>*/
+    uint32_t NIR;/**<NIR diode data>*/
   }spectralMeasure;
 
 
@@ -65,7 +65,7 @@ class AS7341Component : public PollingComponent,
   short setMeasurementMode(uint8_t mode);
   short enableSpectralMeasuring(bool enable);
   short isMeasureOver();
-  short getChannelData(uint8_t channel, uint16_t &data);
+  short getChannelData(uint8_t channel, uint32_t &data);
   short getMeasurementData(bool firstHalf, spectralMeasure &datos);
   void logMeasurement(const spectralMeasure &datos);
   short configureSMUX_Flicker();

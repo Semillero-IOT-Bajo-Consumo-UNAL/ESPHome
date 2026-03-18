@@ -61,7 +61,7 @@ short AS7341Component::setIntegrationSteps(uint8_t integrationSteps) {
 #define REGISTRO_DATOS_CH0_L 0x95
 #define REGISTRO_DATOS_CH0_H 0x96
 
-short AS7341Component::getChannelData(uint8_t channel, uint16_t &data) {
+short AS7341Component::getChannelData(uint8_t channel, uint32_t &data) {
   uint8_t low = 0, high = 0;
 
   if (this->read_register(REGISTRO_DATOS_CH0_L + channel * 2, &low, 1) != i2c::ERROR_OK) {
