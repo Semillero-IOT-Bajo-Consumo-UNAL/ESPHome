@@ -39,8 +39,18 @@ class AS7341Component : public PollingComponent,
   void setup() override;
   void update() override;
   void dump_config() override;
+  void set_gain(uint8_t gain)                  { gain_ = gain; }
+  void set_integration_steps(uint8_t steps)    { integration_steps_ = steps; }
+  void set_integration_time(uint16_t time)     { integration_time_ = time; }
+  void set_led_enabled(bool enabled)           { led_enabled_ = enabled; }
+  void set_led_current(uint8_t current)        { led_current_ = current; }
+  void set_sensitivity_factor(uint8_t idx, float val) {
+    if (idx < 8) sensitivity_factors_[idx] = val;
+  }
+  float sensitivity_factors_[8] = {24.5f, 12.3f, 6.4f, 3.5f, 2.3f, 1.6f, 1.0f, 1.3f};
   float get_setup_priority() const override { 
   return setup_priority::DATA;
+
   }
  private:
   short checkPowerOn();
@@ -71,6 +81,13 @@ class AS7341Component : public PollingComponent,
   short configureSMUX_Flicker();
   short detectFlickerHz(uint16_t &result);
   void applySensitivityFactors(spectralMeasure &datos);
+
+  uint8_t  gain_              = 6;
+  uint8_t  integration_steps_ = 100;
+  uint16_t integration_time_  = 999;
+  bool     led_enabled_       = true;
+  uint8_t  led_current_       = 10;
+
 };
 
 }  // namespace as7341

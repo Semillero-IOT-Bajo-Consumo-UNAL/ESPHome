@@ -14,9 +14,34 @@ i2c:
 
 sensor:
 
+
 as7341:
   id: elespectrometro
   address: 0x39  # optional
+  update_interval: 500ms   # ej: 500ms, 10s, etc. se va por defecto a 5s
+  gain: 8 # Multiplicador de las lecturas, el rango va de [0,10] por defecto es 8.
+
+  # Pasos de integración:
+  #   El espectrometro hace varias minilecturas y luego hace un promedio
+  #   los pasos de integracion es el numero de esas minilecturas
+  #   por defecto es 150 y el rango es [1,255]
+  integration_steps: 150
+  # Tiempo de integracion:
+  #   Es el tiempo en el que esta habilitado el sensor y toca calcularlo tal que:
+  #   TiempoIntegracion = 2.78µs x (n+1)
+  #   por defecto es 999 y el rango es [0, 65534]
+  integration_time: 499
+  # Tiempo de lectura total
+  #   Se calcula tal que: TiempoLectura = (integration_time+1)+(integration_steps+1) × 2.78µ𝑠 
+
+  led_enabled: false # true o false para habilitar LED Mientras realiza lectura (default: true)
+  led_current: 15 # % de iluminacion del LED [1,19] (default: 15)
+
+
+  # sensitivity_factors:
+  #   Opcional, valores de sensibilidad de los 8 canales.
+  #   1: 415nm 2: 445nm 3: 480 nm 4: 515nm 5: 555nm 6: 590nm 7:630nm 8:680nm
+  sensitivity_factors: [24.5, 12.3, 6.4, 3.5, 2.3, 1.6, 1.0, 1.3] 
 
 logger:
   level: DEBUG # Options: NONE, ERROR, WARN, INFO, DEBUG, VERBOSE, VERY_VERBOSE

@@ -531,11 +531,12 @@ void AS7341Component::applySensitivityFactors(spectralMeasure &datos) {
 // TODO: Chequeos de sanidad en la escritura de los registros
 // TODO: Cargar informacion desde el YAML
 short AS7341Component::defaultConfiguration() {
-  this->setIntegrationSteps(100);
-  this->setIntegrationTime(999);
-  this->setGain(6);
-  this->enableLED(true);
-  this->controlLED(true,10);
+  this->setIntegrationSteps(integration_steps_);
+  this->setIntegrationTime(integration_time_);
+  this->setGain(gain_);
+  this->enableLED(led_enabled_);
+  if (led_enabled_)
+    this->controlLED(true, led_current_);
   return 0;
 }
 
