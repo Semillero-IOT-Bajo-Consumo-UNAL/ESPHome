@@ -14,18 +14,18 @@
     --dim: #2a2a3e;
     --text: #c8c8e0;
     --text-dim: #555570;
+    --rec: #ff3d3d;
 
-    /* Colores espectrales por canal */
-    --c1: #9b59f5;   /* 410nm - violeta */
-    --c2: #6e8ef7;   /* 440nm - azul violáceo */
-    --c3: #4fa8ff;   /* 470nm - azul */
-    --c4: #3dcf8e;   /* 510nm - verde azulado */
-    --c5: #a8e63d;   /* 550nm - verde amarillo */
-    --c6: #f5d63d;   /* 583nm - amarillo */
-    --c7: #ff8c3d;   /* 620nm - naranja */
-    --c8: #ff3d3d;   /* 670nm - rojo */
-    --cc: #aaaacc;   /* CLEAR */
-    --cn: #884499;   /* NIR */
+    --c1: #9b59f5;
+    --c2: #6e8ef7;
+    --c3: #4fa8ff;
+    --c4: #3dcf8e;
+    --c5: #a8e63d;
+    --c6: #f5d63d;
+    --c7: #ff8c3d;
+    --c8: #ff3d3d;
+    --cc: #aaaacc;
+    --cn: #884499;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,7 +40,6 @@
     overflow-x: hidden;
   }
 
-  /* Scanline effect */
   body::before {
     content: '';
     position: fixed;
@@ -87,6 +86,26 @@
   .dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
   .dot.error { background: #ff4444; }
 
+  /* REC indicator in header */
+  .rec-badge {
+    display: none;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    color: var(--rec);
+    font-weight: 700;
+  }
+  .rec-badge.visible { display: flex; }
+  .rec-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--rec);
+    box-shadow: 0 0 8px var(--rec);
+    animation: blink 1s step-start infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
   .main {
     flex: 1;
     display: grid;
@@ -96,7 +115,6 @@
     height: calc(100vh - 57px);
   }
 
-  /* Chart area */
   .chart-area {
     padding: 32px 32px 24px;
     display: flex;
@@ -123,7 +141,6 @@
     padding-left: 52px;
   }
 
-  /* Y axis grid */
   .y-grid {
     position: absolute;
     left: 52px; right: 0; top: 0; bottom: 40px;
@@ -149,7 +166,6 @@
     text-align: right;
   }
 
-  /* Bars container */
   .bars {
     display: flex;
     align-items: flex-end;
@@ -248,9 +264,44 @@
     margin-bottom: 8px;
   }
 
+  .btn:last-child { margin-bottom: 0; }
   .btn:hover { border-color: var(--accent); color: var(--accent); }
   .btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
   .btn.danger:hover { border-color: #ff4444; color: #ff4444; }
+
+  /* REC button states */
+  .btn.rec-idle:hover  { border-color: var(--rec); color: var(--rec); }
+  .btn.rec-active {
+    background: var(--rec);
+    color: #fff;
+    border-color: var(--rec);
+    font-weight: 700;
+    animation: rec-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes rec-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,61,61,0.4); }
+    50%      { box-shadow: 0 0 0 6px rgba(255,61,61,0); }
+  }
+
+  .btn.csv-btn { border-color: var(--dim); color: var(--text-dim); }
+  .btn.csv-btn.has-data { border-color: var(--accent); color: var(--accent); }
+  .btn.csv-btn.has-data:hover { background: var(--accent); color: #000; }
+  .btn.csv-btn:not(.has-data) { cursor: not-allowed; opacity: 0.45; }
+
+  /* Record stats */
+  .rec-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+    min-height: 16px;
+  }
+  .rec-stats .count { color: var(--text); }
+  .rec-stats .elapsed { color: var(--text-dim); }
+  .rec-stats.recording .count { color: var(--rec); }
 
   .channel-list {
     display: flex;
@@ -271,10 +322,7 @@
     flex-shrink: 0;
   }
 
-  .ch-name {
-    flex: 1;
-    color: var(--text-dim);
-  }
+  .ch-name { flex: 1; color: var(--text-dim); }
 
   .ch-val {
     font-size: 0.75rem;
@@ -284,7 +332,7 @@
     letter-spacing: 0.05em;
   }
 
-  /* Serial log */
+  /* Log */
   .log-area {
     flex: 1;
     overflow: hidden;
@@ -334,8 +382,8 @@
   .log-line { margin-bottom: 1px; }
   .log-line.highlight { color: var(--accent); }
   .log-line.error { color: #ff6666; }
+  .log-line.rec-log { color: var(--rec); opacity: 0.8; }
 
-  /* No serial support warning */
   #no-serial {
     display: none;
     background: #1a0a0a;
@@ -354,6 +402,10 @@
 <header>
   <div class="logo">AS7341 <span>/ Spectral Monitor</span></div>
   <div class="status-bar">
+    <div class="rec-badge" id="rec-badge">
+      <div class="rec-dot"></div>
+      <span>REC</span>
+    </div>
     <div class="dot" id="dot"></div>
     <span id="status-text">DESCONECTADO</span>
     <span id="baud-label" style="color:var(--text-dim)">115200 baud</span>
@@ -366,7 +418,6 @@
 
 <div class="main">
 
-  <!-- Chart -->
   <div class="chart-area">
     <div class="chart-title">Intensidad espectral — counts raw</div>
     <div class="chart-wrapper">
@@ -375,13 +426,23 @@
     </div>
   </div>
 
-  <!-- Sidebar -->
   <div class="sidebar">
 
     <div class="sidebar-section">
       <div class="sidebar-label">Puerto serial</div>
       <button class="btn" id="btn-connect">Conectar puerto</button>
       <button class="btn danger" id="btn-disconnect" style="display:none">Desconectar</button>
+    </div>
+
+    <!-- ── GRABACIÓN CSV ── -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Grabación CSV</div>
+      <button class="btn rec-idle" id="btn-rec">⏺ Grabar</button>
+      <button class="btn csv-btn" id="btn-download" disabled>⬇ Descargar CSV</button>
+      <div class="rec-stats" id="rec-stats">
+        <span class="count" id="rec-count">0 muestras</span>
+        <span class="elapsed" id="rec-elapsed"></span>
+      </div>
     </div>
 
     <div class="sidebar-section">
@@ -402,20 +463,18 @@
 
 <script>
 const CHANNELS = [
-  { key: 'F1', nm: '410', label: 'F1', color: 'var(--c1)' },
-  { key: 'F2', nm: '440', label: 'F2', color: 'var(--c2)' },
-  { key: 'F3', nm: '470', label: 'F3', color: 'var(--c3)' },
-  { key: 'F4', nm: '510', label: 'F4', color: 'var(--c4)' },
-  { key: 'F5', nm: '550', label: 'F5', color: 'var(--c5)' },
-  { key: 'F6', nm: '583', label: 'F6', color: 'var(--c6)' },
-  { key: 'F7', nm: '620', label: 'F7', color: 'var(--c7)' },
-  { key: 'F8', nm: '670', label: 'F8', color: 'var(--c8)' },
+  { key: 'F1',    nm: '410', label: 'F1',  color: 'var(--c1)' },
+  { key: 'F2',    nm: '440', label: 'F2',  color: 'var(--c2)' },
+  { key: 'F3',    nm: '470', label: 'F3',  color: 'var(--c3)' },
+  { key: 'F4',    nm: '510', label: 'F4',  color: 'var(--c4)' },
+  { key: 'F5',    nm: '550', label: 'F5',  color: 'var(--c5)' },
+  { key: 'F6',    nm: '583', label: 'F6',  color: 'var(--c6)' },
+  { key: 'F7',    nm: '620', label: 'F7',  color: 'var(--c7)' },
+  { key: 'F8',    nm: '670', label: 'F8',  color: 'var(--c8)' },
   { key: 'CLEAR', nm: 'CLR', label: 'CLR', color: 'var(--cc)' },
   { key: 'NIR',   nm: 'NIR', label: 'NIR', color: 'var(--cn)' },
 ];
 
-// Regex para parsear las líneas del log ESP
-// Acepta tanto:  F1 (410nm): 1234   como   CLEAR:      1234   y   NIR:        1234
 const LINE_PATTERNS = [
   { re: /F1\s*\(410nm\):\s*(\d+)/i,   key: 'F1' },
   { re: /F2\s*\(440nm\):\s*(\d+)/i,   key: 'F2' },
@@ -434,6 +493,127 @@ CHANNELS.forEach(c => values[c.key] = 0);
 
 let pendingMeasure = {};
 let port = null, reader = null;
+
+// ── CSV Recording state ──────────────────────────────────────────────────────
+let isRecording  = false;
+let recordedRows = [];       // Array of row objects
+let recStartTime = null;
+let elapsedTimer = null;
+
+const btnRec      = document.getElementById('btn-rec');
+const btnDownload = document.getElementById('btn-download');
+const recStats    = document.getElementById('rec-stats');
+const recCount    = document.getElementById('rec-count');
+const recElapsed  = document.getElementById('rec-elapsed');
+const recBadge    = document.getElementById('rec-badge');
+
+btnRec.addEventListener('click', () => {
+  if (!isRecording) startRecording();
+  else stopRecording();
+});
+
+btnDownload.addEventListener('click', () => {
+  if (recordedRows.length > 0) downloadCSV();
+});
+
+function startRecording() {
+  isRecording  = true;
+  recStartTime = Date.now();
+
+  btnRec.textContent = '⏹ Detener';
+  btnRec.classList.replace('rec-idle', 'rec-active');
+  recBadge.classList.add('visible');
+  recStats.classList.add('recording');
+
+  // Start elapsed clock
+  elapsedTimer = setInterval(updateElapsed, 1000);
+  updateElapsed();
+
+  addLog('[rec] Grabación iniciada', 'rec-log');
+}
+
+function stopRecording() {
+  isRecording = false;
+  clearInterval(elapsedTimer);
+
+  btnRec.textContent = '⏺ Grabar';
+  btnRec.classList.replace('rec-active', 'rec-idle');
+  recBadge.classList.remove('visible');
+  recStats.classList.remove('recording');
+
+  const n = recordedRows.length;
+  addLog(`[rec] Grabación detenida — ${n} muestras`, 'rec-log');
+
+  // Enable download if we have data
+  if (n > 0) {
+    btnDownload.disabled = false;
+    btnDownload.classList.add('has-data');
+  }
+}
+
+function updateElapsed() {
+  const s = Math.floor((Date.now() - recStartTime) / 1000);
+  const mm = String(Math.floor(s / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  recElapsed.textContent = mm + ':' + ss;
+}
+
+function recordSample() {
+  if (!isRecording) return;
+
+  const now = new Date();
+  // ISO timestamp — Excel imports this fine
+  const ts = now.getFullYear()
+    + '-' + String(now.getMonth()+1).padStart(2,'0')
+    + '-' + String(now.getDate()).padStart(2,'0')
+    + ' ' + String(now.getHours()).padStart(2,'0')
+    + ':' + String(now.getMinutes()).padStart(2,'0')
+    + ':' + String(now.getSeconds()).padStart(2,'0')
+    + '.' + String(now.getMilliseconds()).padStart(3,'0');
+
+  const elapsed_s = ((Date.now() - recStartTime) / 1000).toFixed(3);
+
+  const row = { timestamp: ts, elapsed_s };
+  CHANNELS.forEach(ch => { row[ch.key] = values[ch.key]; });
+  recordedRows.push(row);
+
+  // Update counter
+  recCount.textContent = recordedRows.length + ' muestras';
+}
+
+// ── CSV generation & download ────────────────────────────────────────────────
+function downloadCSV() {
+  // Header row
+  const chKeys  = CHANNELS.map(c => c.key);
+  const chNms   = CHANNELS.map(c => c.nm + 'nm');     // friendly header labels
+  const headers = ['timestamp', 'elapsed_s', ...chKeys.map((k, i) => `${k}_${chNms[i]}`)];
+
+  const lines = [headers.join(',')];
+
+  for (const row of recordedRows) {
+    const cells = [
+      `"${row.timestamp}"`,                    // quoted so Excel reads it as text/date
+      row.elapsed_s.replace(',', '.'),          // force period decimal
+      ...chKeys.map(k => String(row[k]))        // integer counts — no decimal issue
+    ];
+    lines.push(cells.join(','));
+  }
+
+  // CRLF line endings — Excel on Windows handles both, but CRLF is safest
+  const csv = lines.join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+
+  const fname = 'as7341_' + new Date().toISOString().replace(/[:.]/g,'-').slice(0,19) + '.csv';
+  a.href     = url;
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  addLog(`[csv] Descargado: ${fname} (${recordedRows.length} filas)`, 'highlight');
+}
 
 // ── Build chart ──────────────────────────────────────────────────────────────
 function buildChart() {
@@ -468,7 +648,6 @@ function buildYGrid() {
   });
 }
 
-// ── Build sidebar channel list ───────────────────────────────────────────────
 function buildChannelList() {
   const list = document.getElementById('channel-list');
   list.innerHTML = '';
@@ -484,12 +663,11 @@ function buildChannelList() {
   });
 }
 
-// ── Update chart with current values ────────────────────────────────────────
+// ── Update chart + record sample ────────────────────────────────────────────
 function updateChart() {
   const vals = CHANNELS.map(c => values[c.key]);
   const maxVal = Math.max(...vals, 1);
 
-  // Y grid labels
   const steps = [0, 0.25, 0.5, 0.75, 1.0];
   steps.reverse().forEach(s => {
     const lbl = document.getElementById(`y-label-${s}`);
@@ -502,16 +680,16 @@ function updateChart() {
     const barEl = document.getElementById(`bar-${ch.key}`);
     const valEl = document.getElementById(`val-${ch.key}`);
     const sideEl = document.getElementById(`side-${ch.key}`);
-    if (barEl) {
-      // altura relativa al contenedor — usamos calc con CSS custom property
-      barEl.style.height = `calc(${pct * 100}% - 20px)`;
-    }
+    if (barEl) barEl.style.height = `calc(${pct * 100}% - 20px)`;
     if (valEl) valEl.textContent = v > 0 ? v.toLocaleString() : '—';
     if (sideEl) sideEl.textContent = v > 0 ? v.toLocaleString() : '—';
   });
+
+  // Record this complete measurement if recording
+  recordSample();
 }
 
-// ── Parse incoming serial line ───────────────────────────────────────────────
+// ── Parse serial line ────────────────────────────────────────────────────────
 function parseLine(line) {
   addLog(line);
 
@@ -524,7 +702,6 @@ function parseLine(line) {
     const m = line.match(p.re);
     if (m) {
       pendingMeasure[p.key] = parseInt(m[1], 10);
-      // Si completamos todos los canales, actualizar
       if (Object.keys(pendingMeasure).length === CHANNELS.length) {
         CHANNELS.forEach(c => values[c.key] = pendingMeasure[c.key] ?? 0);
         updateChart();
@@ -542,7 +719,6 @@ function addLog(text, type = '') {
   line.className = 'log-line' + (type ? ' ' + type : '');
   line.textContent = text;
   logEl.appendChild(line);
-  // Keep last 300 lines
   while (logEl.children.length > 300) logEl.removeChild(logEl.firstChild);
   logEl.scrollTop = logEl.scrollHeight;
 }
@@ -585,6 +761,7 @@ btnDisconnect.addEventListener('click', async () => {
   } catch {}
   setStatus('');
   addLog('[sistema] Puerto cerrado', 'highlight');
+  if (isRecording) stopRecording();
 });
 
 async function readLoop() {
@@ -598,7 +775,7 @@ async function readLoop() {
       if (done) break;
       buffer += value;
       const lines = buffer.split('\n');
-      buffer = lines.pop(); // last incomplete line stays in buffer
+      buffer = lines.pop();
       for (const line of lines) {
         const clean = line.replace(/\r/g, '').trim();
         if (clean) parseLine(clean);
@@ -610,14 +787,12 @@ async function readLoop() {
   setStatus('');
 }
 
-// ── Check serial support ─────────────────────────────────────────────────────
 if (!('serial' in navigator)) {
   document.getElementById('no-serial').style.display = 'block';
   btnConnect.disabled = true;
   btnConnect.textContent = 'No soportado';
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
 buildChart();
 buildChannelList();
 updateChart();
