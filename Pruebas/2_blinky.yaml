@@ -1,0 +1,20 @@
+esphome:
+  name: my-device
+
+esp32:
+  variant: esp32c6
+
+output:
+  platform: gpio
+  pin:
+    number: 8
+    mode: output
+  id:
+    ledsaso
+
+interval:
+  interval: 500ms
+  then:
+    - output.turn_on: ledsaso
+    - delay: 250ms
+    - output.turn_off: ledsaso

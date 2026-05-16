@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>AS7341 Spectral Monitor - Reconstrucción</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --panel: #11111a;
+    --border: #1e1e2e;
+    --accent: #00ff88;
+    --text: #c8c8e0;
+    --text-dim: #555570;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  header {
+    padding: 15px 30px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .main-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .chart-container {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar {
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .lux-card {
+    background: var(--bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    text-align: center;
+  }
+
+  .lux-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--accent);
+  }
+
+  .lux-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .btn {
+    padding: 12px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="font-family: 'Syne', sans-serif; font-weight: 800; color: var(--accent);">AS7341 SPECTRAL RECONSTRUCTION</div>
+  <div id="status">DESCONECTADO</div>
+</header>
+
+<div class="main-container">
+  <div class="chart-container">
+    <canvas id="spectralChart"></canvas>
+  </div>
+
+  <div class="sidebar">
+    <div class="lux-card">
+      <div class="lux-label">Iluminancia Estimada</div>
+      <div class="lux-value" id="lux-val">0.0</div>
+      <div class="lux-label">LUX</div>
+    </div>
+
+    <button class="btn" id="connect-btn">Conectar Sensor</button>
+    
+    <div style="font-size: 0.7rem; color: var(--text-dim);">
+      <strong>INFO:</strong> El espectro se reconstruye a partir de 9 canales usando la matriz Kc de 401x9 puntos (380-780nm).
+    </div>
+  </div>
+</div>
+
+<script>
+  let chart;
+  const wavelengths = Array.from({length: 401}, (_, i) => 380 + i);
+  
+  function initChart() {
+    const ctx = document.getElementById('spectralChart').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: wavelengths,
+        datasets: [{
+          label: 'Espectro Reconstruido',
+          data: new Array(401).fill(0),
+          borderColor: '#00ff88',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          backgroundColor: 'rgba(0, 255, 136, 0.1)'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { title: { display: true, text: 'Longitud de Onda (nm)', color: '#c8c8e0' } },
+          y: { title: { display: true, text: 'Intensidad Relativa', color: '#c8c8e0' }, beginAtZero: true }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  // Lógica de conexión Web Serial y procesamiento
+  // El ESP32 enviará los 401 puntos por serial en un formato JSON o CSV
+  async function connect() {
+    try {
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 115200 });
+      document.getElementById('status').innerText = 'CONECTADO';
+      
+      const reader = port.readable.getReader();
+      let buffer = '';
+      
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        buffer += new TextDecoder().decode(value);
+        if (buffer.includes('\n')) {
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          
+          for (const line of lines) {
+            if (line.startsWith('SPEC:')) {
+              const data = line.substring(5).split(',').map(Number);
+              if (data.length === 401) {
+                chart.data.datasets[0].data = data;
+                chart.update();
+              }
+            } else if (line.startsWith('LUX:')) {
+              document.getElementById('lux-val').innerText = line.substring(4);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      document.getElementById('status').innerText = 'ERROR';
+    }
+  }
+
+  document.getElementById('connect-btn').onclick = connect;
+  initChart();
+</script>
+
+</body>
+</html>

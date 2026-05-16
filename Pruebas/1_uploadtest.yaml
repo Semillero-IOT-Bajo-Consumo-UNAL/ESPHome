@@ -1,0 +1,9 @@
+esphome:
+  name: my-device
+
+esp32:
+  variant: esp32c6
+
+
+logger:
+
