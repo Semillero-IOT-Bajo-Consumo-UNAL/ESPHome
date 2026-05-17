@@ -3,8 +3,9 @@ external_components:
 
 esphome:
   name: my-device
-
-
+  includes:
+   - Constantes.h
+   - procesarEspectro.h
 
 esp32:
   variant: esp32c6

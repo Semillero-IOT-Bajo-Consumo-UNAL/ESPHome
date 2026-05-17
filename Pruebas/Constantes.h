@@ -812,4 +812,9 @@ const float V_LAMBDA[401] = {
     0.000015f // 780 nm
 };
 
+struct lectura_espectro
+{
+    float espectro_lectura[401];
+};
+
 #endif
