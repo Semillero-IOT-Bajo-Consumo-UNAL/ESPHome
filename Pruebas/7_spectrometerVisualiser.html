@@ -435,7 +435,36 @@
       </div>
 
     </div>
+<div class="sidebar-section">
 
+      <div class="sidebar-label">
+        M-EDI
+      </div>
+
+      <div
+        id="medi-value"
+        style="
+          font-size:2rem;
+          color:var(--accent);
+          text-align:center;
+        ">
+
+      ---
+
+      </div>
+
+      <div
+        style="
+          text-align:center;
+          color:var(--text-dim);
+          font-size:0.8rem;
+        ">
+
+        M-EDI
+
+      </div>
+
+    </div>
 
     <div class="log-area">
       <div class="log-header">
@@ -494,7 +523,7 @@ let spectrumBuffer = Array(401).fill(0);
 let receivingSpectrum = false;
 let spectrumChart = null;
 
-const wavelengths = Array.from({ length: 401 }, (_, i) => 380 + i);
+const wavelengths = Array.from({ length: 401 }, (_, i) => 380 + i * 1);
 
 
 
@@ -651,7 +680,16 @@ if (line.includes("LUX:")) {
   return;
 }
 
+if (line.includes("M-EDI:")) {
+  const idx2 = line.indexOf("M-EDI:");
+  const MEDI = parseFloat(line.substring(idx2 + 6));
 
+  if (!Number.isNaN(MEDI)) {
+    document.getElementById("medi-value").textContent = MEDI.toFixed(1);
+  }
+
+  return;
+}
 
 }
 

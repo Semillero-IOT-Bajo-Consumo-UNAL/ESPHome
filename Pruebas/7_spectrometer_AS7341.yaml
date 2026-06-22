@@ -6,6 +6,8 @@ esphome:
   includes:
    - Constantes.h
    - procesarEspectro.h
+   - pantalla_as7341.h
+
 
 esp32:
   variant: esp32c6
@@ -32,3 +34,55 @@ uart:
     rx_pin: GPIO20
     baud_rate: 115200
   
+display:
+  - platform: lcd_pcf8574
+    id: lcd_as7341
+    dimensions: 20x4
+    address: 0x27
+    update_interval: 1s
+    lambda: |-
+      using namespace esphome::as7341;
+
+      static uint8_t pagina = 0;
+      static uint32_t ultimo_cambio = 0;
+
+      if (millis() - ultimo_cambio > 3000) {
+        pagina = (pagina + 1) % 4;
+        ultimo_cambio = millis();
+      }
+
+      auto &s = pantalla_estado;
+
+      if (!s.valido) {
+        it.printf(0, 0, "AS7341 esperando");
+        it.printf(0, 1, "primera lectura...");
+        return;
+      }
+
+      if (pagina == 0) {
+        it.printf(0, 0, "F1:%5lu F2:%5lu", s.f1, s.f2);
+        it.printf(0, 1, "F3:%5lu F4:%5lu", s.f3, s.f4);
+        it.printf(0, 2, "F5:%5lu F6:%5lu", s.f5, s.f6);
+        it.printf(0, 3, "F7:%5lu F8:%5lu", s.f7, s.f8);
+      }
+
+      else if (pagina == 1) {
+        it.printf(0, 0, "CLEAR:%10lu", s.clear);
+        it.printf(0, 1, "NIR:  %10lu", s.nir);
+        it.printf(0, 2, "Lux:%12.2f", s.lux);
+        it.printf(0, 3, "Flicker:%5u Hz", s.flicker_hz);
+      }
+
+      else if (pagina == 2) {
+        it.printf(0, 0, "Calculos extra");
+        it.printf(0, 1, "CCT:%10.1f K", s.cct);
+        it.printf(0, 2, "PPFD:%9.2f", s.ppfd);
+        it.printf(0, 3, "Dom:%8.1f nm", s.dominante_nm);
+      }
+
+      else {
+        it.printf(0, 0, "AS7341 ESP32-C6");
+        it.printf(0, 1, "Matriz Kc 401x9");
+        it.printf(0, 2, "Rango: 380-780nm");
+        it.printf(0, 3, "Lux:%12.2f", s.lux);
+      }

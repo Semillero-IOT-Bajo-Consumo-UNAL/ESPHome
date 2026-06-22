@@ -11,8 +11,9 @@
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
 
-#include "Constantes.h" //Matriz de Calibración Calculada. Edit By DPM
+#include "Constantes.h" //Matriz de Calibración Calculada y V_lambda. Edit By DPM
 #include "procesarEspectro.h" //Aquí es donde debería ocurrir la mágia. Edit By DPM
+#include "pantalla_as7341.h" //Intento de visualizar la información en una pantallita LCD. Edit By DPM
 
 #include "esphome/core/application.h"
 #include "esphome/components/uart/uart.h"
@@ -619,12 +620,29 @@ void AS7341Component::update() {
 
   float lux = calcularIluminancia(espectro);
 
+  float MEDI = calcularMEDI(espectro);
+
+  actualizarPantallaAS7341(
+  measuredData.channel1,
+  measuredData.channel2,
+  measuredData.channel3,
+  measuredData.channel4,
+  measuredData.channel5,
+  measuredData.channel6,
+  measuredData.channel7,
+  measuredData.channel8,
+  measuredData.CLEAR,
+  measuredData.NIR,
+  lux,
+  storedFlicker
+);
+
   ESP_LOGI(TAG, "=== ESPECTRO_RECONSTRUIDO ===");
 
   std::string spec_line = "SPEC:";
   char buffer[24];
 
-  for (int i = 0; i < 401; i++) {
+  for (int i = 0; i < 401; i++) { // 81 Si la matriz tiene resolución de 5 nm o 401 si tiene resolución de 1 nm
     snprintf(buffer, sizeof(buffer), "%.4f", espectro[i]);
     spec_line += buffer;
 
@@ -637,7 +655,7 @@ void AS7341Component::update() {
   //ESP_LOGI(TAG, "%s", spec_line.c_str());
 
   ESP_LOGI(TAG, "SBEGIN");
-  for (int i = 0; i < 401; i++) {
+  for (int i = 0; i < 401; i++) { // 81 Si la matriz tiene resolución de 5 nm o 401 si tiene resolución de 1 nm
     ESP_LOGI(TAG, "S:%d,%.6f", i, espectro[i]);
   }
   ESP_LOGI(TAG, "SEND");
@@ -645,11 +663,11 @@ void AS7341Component::update() {
 //Envío de la iluminancia calculada. By DPM
   ESP_LOGI(TAG, "LUX:%.2f", lux);
 
+  //Envío de la iluminancia Melanopica Equivalente calculada. By DPM
+  ESP_LOGI(TAG, "M-EDI:%.2f", MEDI);
+
   this->logMeasurement(measuredData);
-}
-
-      
-
+}   
 
       void AS7341Component::dump_config() {
         ESP_LOGCONFIG(TAG, "AS7341:");
