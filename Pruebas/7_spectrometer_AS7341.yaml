@@ -1,28 +1,52 @@
+substitutions:
+  device_name: test-esp32c6
+  friendly_name: "Espectrometro AS7341"
+
 external_components:
-  source: components
+  - source: 
+      type: local
+      path: components
 
 esphome:
-  name: my-device
+  name: espectrometro-as7341
   includes:
-   - Constantes.h
-   - procesarEspectro.h
-   - pantalla_as7341.h
-
+   - lib/Constantes.h
+   - lib/procesarEspectro.h
+   - lib/calculoColorimetria.h
+   - lib/calculoColorimetria.cpp
 
 esp32:
   variant: esp32c6
+  board: esp32-c6-devkitc-1
+  framework:
+    type: esp-idf
 
 i2c:
+  id: bus_i2c
   sda: 6
   scl: 7
   scan: true
 
 sensor:
-
-as7341:
-  id: elespectrometro
-  address: 0x39  # I2C Address Según Datasheet (Opcional)
-
+  - platform: as7341
+    id: elespectrometro
+    address: 0x39  # I2C Address Según Datasheet (Opcional)
+    i2c_id: bus_i2c
+    update_interval: 500ms
+    lux:
+      name: "lux"
+    medi:
+      name: "Melanopic EDI"
+    cct:
+      name: "CCT"
+    duv:
+      name: "Duv"
+    x:
+      name: "Chromaticity x"
+    y:
+      name: "Chromaticity y"
+    ra:
+      name: "CRI Ra"
 
 logger:
   level: DEBUG # Options: NONE, ERROR, WARN, INFO, DEBUG, VERBOSE, VERY_VERBOSE
@@ -33,56 +57,26 @@ uart:
     tx_pin: GPIO21 # Ajusta a tus pines reales del C6
     rx_pin: GPIO20
     baud_rate: 115200
+
+wifi:
+  ssid: "GATITOS"
+  password: "Katos25*"
+
+  enable_on_boot: true
+  fast_connect: true
+
+  power_save_mode: none
+
+  ap:
+    ssid: !secret wifi_ssid
+    password: "12345678"
+
+  captive_portal:
   
-display:
-  - platform: lcd_pcf8574
-    id: lcd_as7341
-    dimensions: 20x4
-    address: 0x27
-    update_interval: 1s
-    lambda: |-
-      using namespace esphome::as7341;
+  api:
+  encryption:
+    key: th34VV1JV2tb7dly1/vjL7AGcPj2qQvG4G2r+lUss+I=
 
-      static uint8_t pagina = 0;
-      static uint32_t ultimo_cambio = 0;
-
-      if (millis() - ultimo_cambio > 3000) {
-        pagina = (pagina + 1) % 4;
-        ultimo_cambio = millis();
-      }
-
-      auto &s = pantalla_estado;
-
-      if (!s.valido) {
-        it.printf(0, 0, "AS7341 esperando");
-        it.printf(0, 1, "primera lectura...");
-        return;
-      }
-
-      if (pagina == 0) {
-        it.printf(0, 0, "F1:%5lu F2:%5lu", s.f1, s.f2);
-        it.printf(0, 1, "F3:%5lu F4:%5lu", s.f3, s.f4);
-        it.printf(0, 2, "F5:%5lu F6:%5lu", s.f5, s.f6);
-        it.printf(0, 3, "F7:%5lu F8:%5lu", s.f7, s.f8);
-      }
-
-      else if (pagina == 1) {
-        it.printf(0, 0, "CLEAR:%10lu", s.clear);
-        it.printf(0, 1, "NIR:  %10lu", s.nir);
-        it.printf(0, 2, "Lux:%12.2f", s.lux);
-        it.printf(0, 3, "Flicker:%5u Hz", s.flicker_hz);
-      }
-
-      else if (pagina == 2) {
-        it.printf(0, 0, "Calculos extra");
-        it.printf(0, 1, "CCT:%10.1f K", s.cct);
-        it.printf(0, 2, "PPFD:%9.2f", s.ppfd);
-        it.printf(0, 3, "Dom:%8.1f nm", s.dominante_nm);
-      }
-
-      else {
-        it.printf(0, 0, "AS7341 ESP32-C6");
-        it.printf(0, 1, "Matriz Kc 401x9");
-        it.printf(0, 2, "Rango: 380-780nm");
-        it.printf(0, 3, "Lux:%12.2f", s.lux);
-      }
+  ota:
+    - platform: esphome
+      password: "tu_password_ota

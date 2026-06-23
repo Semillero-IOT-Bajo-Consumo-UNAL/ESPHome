@@ -1,10 +1,10 @@
-//
-// as7341.cpp : ESPHOME driver for as7341 Spectrometer
-//
-// Copyright 2026 Santiago Valderrama M -  Daniel J Palacio M  
-//
-// released under GNU General Public License v3.0 (see file)
-//
+/*=================================================================
+|  as7341.cpp : ESPHOME driver for as7341 Spectrometer            |
+|                                                                 |
+|  Copyright 2026 Santiago Valderrama M -  Daniel J Palacio M     |  
+|                                                                 |
+|  Released under GNU General Public License v3.0 (see file)      |
+=================================================================*/
 
 
 #include "as7341.h"
@@ -13,7 +13,8 @@
 
 #include "Constantes.h" //Matriz de Calibración Calculada y V_lambda. Edit By DPM
 #include "procesarEspectro.h" //Aquí es donde debería ocurrir la mágia. Edit By DPM
-#include "pantalla_as7341.h" //Intento de visualizar la información en una pantallita LCD. Edit By DPM
+
+#include "calculoColorimetria.h" // Se incluye biblioteca para cálculos colorimétricos. Edit By DPM
 
 #include "esphome/core/application.h"
 #include "esphome/components/uart/uart.h"
@@ -29,14 +30,14 @@
 // TODO: Implmentar la medicion del flicker
 // TODO: Implementar el AGC para calibracion propia
 
-/*
-	Tener presente para la conexión del AS7341 con la ESP32-C6:
-		AS7341 --> ESP32-C6
-		3v3 	-	3v3
-		GND 	-	GND
-		SCL 	- 	Pin 6
-		SDA 	-	Pin 7	
- */
+/*=============================================================
+|	Tener presente para la conexión del AS7341 con la ESP32-C6: |
+|		AS7341 --> ESP32-C6                                       |
+|		3v3 	-	3v3                                               |
+|		GND 	-	GND                                               |
+|		SCL 	- 	Pin 6                                           |
+|		SDA 	-	Pin 7	                                            |
+=============================================================*/
 
 
 namespace esphome {
@@ -385,8 +386,6 @@ La Ganancia  AGAIN se define en valores de 0 a 10, siendo 0 Gain 0.5x y 10 Gain 
       return 0;
     }
 
-
-
     short AS7341Component::setMeasurementMode(uint8_t mode) {
       if (mode == 2 || mode > 3) {
         ESP_LOGE(TAG, "Modo de medicion invalido (0=SPM, 1=SYNS, 3=SYND)");
@@ -512,22 +511,14 @@ La Ganancia  AGAIN se define en valores de 0 a 10, siendo 0 Gain 0.5x y 10 Gain 
 
     // Pendiente validar los factores de sensibilidad de acuerdo con la matriz de calibración
     const float sensitivity_factors[8] = {
-        /*1350.0f / 55.0f,    // F1: ~24.5
-        1350.0f / 110.0f,   // F2: ~12.3
-        1350.0f / 210.0f,   // F3: ~6.4
-        1350.0f / 390.0f,   // F4: ~3.5
-        1350.0f / 590.0f,   // F5: ~2.3
-        1350.0f / 840.0f,   // F6: ~1.6
-        1350.0f / 1350.0f,  // F7: 1.0
-        1350.0f / 1070.0f,  // F8: ~1.3*/
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1
+        1, // F1
+        1, // F2 
+        1, // F3
+        1, // F4
+        1, // F5
+        1, // F6
+        1, // F7
+        1  // F8
       };
       
     void AS7341Component::applySensitivityFactors(spectralMeasure &datos) {
@@ -555,7 +546,7 @@ La Ganancia  AGAIN se define en valores de 0 a 10, siendo 0 Gain 0.5x y 10 Gain 
       // Ganancia 64x (VALUE=7) según el Datasheet 
       this->setGain(7);
       this->enableLED(false);
-      this->controlLED(false,10);
+      this->controlLED(false, 10);
       return 0;
     }
 
@@ -615,59 +606,68 @@ void AS7341Component::update() {
     measuredData.CLEAR
   };
 
-  float espectro[401];
-  reconstruirEspectro(canales, espectro);
+  float espectro[81];
+  reconstruirEspectro(canales, espectro); // Función para calcular el espectro. S = Kc * Sdut. Ver procesarEspectro.h
 
-  float lux = calcularIluminancia(espectro);
+  float lux = calcularIluminancia(espectro); // Función para el cálculo de iluminancia. Ver procesarEspectro.h
 
-  float MEDI = calcularMEDI(espectro);
+  float MEDI = calcularMEDI(espectro); // Función para el cálculo del M-EDI. Ver procesarEspectro.h
 
-  actualizarPantallaAS7341(
-  measuredData.channel1,
-  measuredData.channel2,
-  measuredData.channel3,
-  measuredData.channel4,
-  measuredData.channel5,
-  measuredData.channel6,
-  measuredData.channel7,
-  measuredData.channel8,
-  measuredData.CLEAR,
-  measuredData.NIR,
-  lux,
-  storedFlicker
-);
+  ColorimetryResult c = calcular_colorimetria(espectro); // Cálculos de colorimetría. Ver calculoColorimetria.cpp
 
+  //Envío de los valores calculados por puerto Serie
   ESP_LOGI(TAG, "=== ESPECTRO_RECONSTRUIDO ===");
 
   std::string spec_line = "SPEC:";
   char buffer[24];
 
-  for (int i = 0; i < 401; i++) { // 81 Si la matriz tiene resolución de 5 nm o 401 si tiene resolución de 1 nm
+  for (int i = 0; i < 81; i++) { // 81 Si la matriz tiene resolución de 5 nm o 401 si tiene resolución de 1 nm
     snprintf(buffer, sizeof(buffer), "%.4f", espectro[i]);
     spec_line += buffer;
 
-    if (i < 400) {
+    if (i < 80) {
       spec_line += ",";
     }
   }
 
-  // Envío del espectro para lectura en el HTML. Tocó partirlo para no tener problema por la cadena taaaaaaaaan larga
-  //ESP_LOGI(TAG, "%s", spec_line.c_str());
+  /*=======================================================================
+  |   Envío del espectro para lectura en el HTML. 
+  |   Tocó partirlo para no tener problema por la cadena taaaaaaaaan larga
+  */=======================================================================
+  
 
   ESP_LOGI(TAG, "SBEGIN");
-  for (int i = 0; i < 401; i++) { // 81 Si la matriz tiene resolución de 5 nm o 401 si tiene resolución de 1 nm
+  for (int i = 0; i < 81; i++) { // 81 Si la matriz tiene resolución de 5 nm o 401 si tiene resolución de 1 nm
     ESP_LOGI(TAG, "S:%d,%.6f", i, espectro[i]);
   }
   ESP_LOGI(TAG, "SEND");
 
-//Envío de la iluminancia calculada. By DPM
-  ESP_LOGI(TAG, "LUX:%.2f", lux);
+  ESP_LOGI(TAG, "LUX:%.2f", lux); //Envío de la iluminancia calculada. By DPM
+  ESP_LOGI(TAG, "M-EDI:%.2f", MEDI); //Envío de la iluminancia Melanopica Equivalente calculada. By DPM
+  ESP_LOGI(TAG, "CCT:%.0f", c.CCT); //Envío de los datos Colorimétricos calculados. By DPM
+  ESP_LOGI(TAG, "Duv:%.3f", c.Duv);
+  ESP_LOGI(TAG, "x:%.3f", c.x);
+  ESP_LOGI(TAG, "y:%.3f", c.y);
+  ESP_LOGI(TAG, "Ra:%.0f", c.Ra);;
 
-  //Envío de la iluminancia Melanopica Equivalente calculada. By DPM
-  ESP_LOGI(TAG, "M-EDI:%.2f", MEDI);
+  /*======================================================================================================
+  |   Lo siguiente es para almacenar los valores calculados y usarlos en el ESPHome. 
+  |   Se envía únicamente los datos que creo que se van a usar más adelante.
+  |   Si se requieren valores adicionales, se debe declarar los sensores y sus variables correspondientes
+  |      en sensores.py, en el YAML y demás lugares que se requiera.   
+  */======================================================================================================
+
+  if(lux_sensor_ != nullptr) lux_sensor_->publish_state(lux);
+  if (medi_sensor_ != nullptr) medi_sensor_->publish_state(MEDI);
+  if (cct_sensor_ != nullptr) cct_sensor_->publish_state(c.CCT);
+  if (duv_sensor_ != nullptr) duv_sensor_->publish_state(c.Duv);
+  if (x_sensor_ != nullptr) x_sensor_->publish_state(c.x);
+  if (y_sensor_ != nullptr) y_sensor_->publish_state(c.y);
+  if (ra_sensor_ != nullptr) ra_sensor_->publish_state(c.Ra);
+
 
   this->logMeasurement(measuredData);
-}   
+} //update()   
 
       void AS7341Component::dump_config() {
         ESP_LOGCONFIG(TAG, "AS7341:");

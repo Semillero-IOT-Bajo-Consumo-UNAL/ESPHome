@@ -1,10 +1,10 @@
-//
-// as7341.h : ESPHOME driver for as7341 Spectrometer
-//
-// Copyright 2026 Santiago Valderrama M -  Daniel J Palacio M  
-//
-// released under GNU General Public License v3.0 (see file)
-//
+/*=================================================================
+| as7341.h : ESPHOME driver for as7341 Spectrometer
+|
+| Copyright 2026 Santiago Valderrama M -  Daniel J Palacio M  
+|
+| released under GNU General Public License v3.0 (see file)
+=================================================================*/
 
 
 
@@ -13,6 +13,7 @@
 #include "esphome/components/i2c/i2c.h"
 #include "esphome/components/sensor/sensor.h" 
 #include "esphome/components/uart/uart.h"
+#include "esphome/core/helpers.h"
 
 
 typedef struct{
@@ -33,8 +34,8 @@ namespace esphome {
 namespace as7341 {
 
 class AS7341Component : public PollingComponent,
-                        public i2c::I2CDevice,
-                        public sensor::Sensor { 
+                        public i2c::I2CDevice { 
+
  public:
   AS7341Component() = default;
   void setup() override;
@@ -46,8 +47,24 @@ class AS7341Component : public PollingComponent,
   }
   void set_uart_parent(uart::UARTComponent *parent) { this->parent_uart_ = parent; }
 
+  void set_lux_sensor(sensor::Sensor *s) { lux_sensor_ = s; }
+  void set_medi_sensor(sensor::Sensor *s) { medi_sensor_ = s; }
+  void set_cct_sensor(sensor::Sensor *s) { cct_sensor_ = s; }
+  void set_duv_sensor(sensor::Sensor *s) { duv_sensor_ = s; }
+  void set_x_sensor(sensor::Sensor *s) { x_sensor_ = s; }
+  void set_y_sensor(sensor::Sensor *s) { y_sensor_ = s; }
+  void set_ra_sensor(sensor::Sensor *s) { ra_sensor_ = s; }
+
 protected:
   uart::UARTComponent *parent_uart_{nullptr};
+
+  sensor::Sensor *lux_sensor_{nullptr};
+  sensor::Sensor *medi_sensor_{nullptr};
+  sensor::Sensor *cct_sensor_{nullptr};
+  sensor::Sensor *duv_sensor_{nullptr};
+  sensor::Sensor *x_sensor_{nullptr};
+  sensor::Sensor *y_sensor_{nullptr};
+  sensor::Sensor *ra_sensor_{nullptr};
 
  private:
   short checkPowerOn();

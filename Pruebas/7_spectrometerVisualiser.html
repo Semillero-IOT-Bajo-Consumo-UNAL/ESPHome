@@ -16,18 +16,9 @@
     --dim: #2a2a3e;
     --text: #c8c8e0;
     --text-dim: #555570;
-
-    /* Colores espectrales por canal */
-    --c1: #9b59f5;   /* 410nm - violeta */
-    --c2: #6e8ef7;   /* 440nm - azul violáceo */
-    --c3: #4fa8ff;   /* 470nm - azul */
-    --c4: #3dcf8e;   /* 510nm - verde azulado */
-    --c5: #a8e63d;   /* 550nm - verde amarillo */
-    --c6: #f5d63d;   /* 583nm - amarillo */
-    --c7: #ff8c3d;   /* 620nm - naranja */
-    --c8: #ff3d3d;   /* 670nm - rojo */
-    --cc: #aaaacc;   /* CLEAR */
-    --cn: #884499;   /* NIR */
+    --c1: #9b59f5; --c2: #6e8ef7; --c3: #4fa8ff; --c4: #3dcf8e;
+    --c5: #a8e63d; --c6: #f5d63d; --c7: #ff8c3d; --c8: #ff3d3d;
+    --cc: #aaaacc; --cn: #884499;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,13 +27,12 @@
     background: var(--bg);
     color: var(--text);
     font-family: 'Space Mono', monospace;
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow-x: hidden;
+    overflow: hidden; 
   }
 
-  /* Scanline effect */
   body::before {
     content: '';
     position: fixed;
@@ -59,6 +49,7 @@
     padding: 18px 32px;
     border-bottom: 1px solid var(--border);
     background: var(--panel);
+    flex-shrink: 0;
   }
 
   .logo {
@@ -92,18 +83,37 @@
   .main {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 320px;
-    grid-template-rows: 1fr auto;
-    gap: 0;
-    height: calc(100vh - 57px);
+    grid-template-columns: 220px 1fr 320px;
+    overflow: hidden; /* Bloquea cualquier expansión global */
   }
 
-  /* Chart area */
-  .chart-area {
-    padding: 32px 32px 24px;
+  /* --- SIDEBAR IZQUIERDA (Botones + Log) --- */
+  .sidebar-left {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* --- CENTRO: GRÁFICOS ESTÁTICOS --- */
+  .chart-area {
+    padding: 24px;
+    /* EL SECRETO: Grid con 2 filas exactas impide que un gráfico empuje al otro */
+    display: grid;
+    grid-template-rows: 1fr 1fr; 
+    gap: 20px;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* Cada gráfico está encerrado en su celda sin poder crecer */
+  .chart-area > div {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden; 
   }
 
   .chart-title {
@@ -112,20 +122,18 @@
     letter-spacing: 0.2em;
     color: var(--text-dim);
     text-transform: uppercase;
-    margin-bottom: 28px;
+    margin-bottom: 16px;
+    flex-shrink: 0;
   }
 
   .chart-wrapper {
     flex: 1;
-    display: flex;
-    align-items: flex-end;
-    gap: 0;
     position: relative;
     padding-bottom: 40px;
     padding-left: 52px;
+    min-height: 0;
   }
 
-  /* Y axis grid */
   .y-grid {
     position: absolute;
     left: 52px; right: 0; top: 0; bottom: 40px;
@@ -151,7 +159,6 @@
     text-align: right;
   }
 
-  /* Bars container */
   .bars {
     display: flex;
     align-items: flex-end;
@@ -214,16 +221,26 @@
     font-size: 0.65rem;
   }
 
-  /* Sidebar */
+  /* --- SIDEBAR DERECHA (Métricas + Canales + Slider) --- */
   .sidebar {
     display: flex;
     flex-direction: column;
     background: var(--panel);
+    border-left: 1px solid var(--border);
+    overflow: hidden;
   }
 
+  .sidebar-left::-webkit-scrollbar,
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar-left::-webkit-scrollbar-track,
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-left::-webkit-scrollbar-thumb,
+  .sidebar::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
   .sidebar-section {
-    padding: 20px 20px;
+    padding: 20px;
     border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
   }
 
   .sidebar-label {
@@ -263,8 +280,8 @@
   .channel-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 0.7rem;
+    gap: 8px;
+    font-size: 0.65rem;
   }
 
   .ch-dot {
@@ -276,22 +293,73 @@
   .ch-name {
     flex: 1;
     color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ch-val {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text);
-    min-width: 50px;
+    min-width: 40px;
     text-align: right;
     letter-spacing: 0.05em;
   }
 
-  /* Serial log */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .metric-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 10px 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.3s;
+  }
+
+  .metric-card:hover { border-color: var(--dim); }
+
+  .metric-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .metric-value {
+    font-size: 1.3rem;
+    color: var(--accent);
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+    font-family: 'Space Mono', monospace;
+    word-break: break-all;
+  }
+
+  .metric-unit {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* Log serial adaptado para la barra izquierda */
   .log-area {
     flex: 1;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    border-top: 1px solid var(--border);
   }
 
   .log-header {
@@ -304,6 +372,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
   }
 
   .log-clear {
@@ -321,23 +390,17 @@
 
   #log {
     flex: 1;
-    overflow-y: scroll;
+    overflow-y: auto;
     padding: 10px 16px;
     font-size: 0.65rem;
     line-height: 1.7;
-    max-height: 300px;
     color: var(--text-dim);
   }
-
-  #log::-webkit-scrollbar { width: 4px; }
-  #log::-webkit-scrollbar-track { background: transparent; }
-  #log::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
 
   .log-line { margin-bottom: 1px; }
   .log-line.highlight { color: var(--accent); }
   .log-line.error { color: #ff6666; }
 
-  /* No serial support warning */
   #no-serial {
     display: none;
     background: #1a0a0a;
@@ -368,102 +431,13 @@
 
 <div class="main">
 
-  <!-- Chart -->
-  <div class="chart-area">
-    <div class="chart-title">Intensidad espectral — counts raw</div>
-    <div class="chart-wrapper">
-      <div class="y-grid" id="y-grid"></div>
-      <div class="bars" id="bars"></div>
-    </div>
-
-    <div class="chart-title" style="margin-top:40px;">
-      Espectro reconstruido
-    </div>
-    <div style="height:260px; border:1px solid var(--border); padding:14px;">
-      <canvas id="spectrumCanvas"></canvas>
-    </div>
-
-  </div>
-
-  <!-- Sidebar -->
-  <div class="sidebar">
-
+  <!-- SIDEBAR IZQUIERDA (Botones + Log) -->
+  <div class="sidebar-left">
     <div class="sidebar-section">
       <div class="sidebar-label">Puerto serial</div>
-      <button class="btn" id="btn-connect">Conectar puerto</button>
+      <button class="btn" id="btn-connect">Conectar</button>
       <button class="btn danger" id="btn-disconnect" style="display:none">Desconectar</button>
-	  
-	  <!-- Slider para el tiempo de integración Edit By DPM -->
-	  <div class="sidebar-label">Tiempo de Integración</div>
-	  <input type="range" id="integration-slider" min="10" max="500" value="100">
-	  <div id="integration-value">100 ms</div>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-label">Canales</div>
-      <div class="channel-list" id="channel-list"></div>
-
-    </div>
-
-    <div class="sidebar-section">
-
-      <div class="sidebar-label">
-        Iluminancia
-      </div>
-
-      <div
-        id="lux-value"
-        style="
-          font-size:2rem;
-          color:var(--accent);
-          text-align:center;
-        ">
-
-      ---
-
-      </div>
-
-      <div
-        style="
-          text-align:center;
-          color:var(--text-dim);
-          font-size:0.8rem;
-        ">
-
-        lux
-
-      </div>
-
-    </div>
-<div class="sidebar-section">
-
-      <div class="sidebar-label">
-        M-EDI
-      </div>
-
-      <div
-        id="medi-value"
-        style="
-          font-size:2rem;
-          color:var(--accent);
-          text-align:center;
-        ">
-
-      ---
-
-      </div>
-
-      <div
-        style="
-          text-align:center;
-          color:var(--text-dim);
-          font-size:0.8rem;
-        ">
-
-        M-EDI
-
-      </div>
-
+      <button class="btn" id="btn-download">Descargar CSV</button>
     </div>
 
     <div class="log-area">
@@ -473,13 +447,70 @@
       </div>
       <div id="log"></div>
     </div>
-
-	<button class="btn" id="btn-download">Descargar CSV</button>
   </div>
+
+  <!-- CENTRO: GRÁFICOS ESTÁTICOS -->
+  <div class="chart-area">
+    <div>
+      <div class="chart-title">Intensidad espectral — counts raw</div>
+      <div class="chart-wrapper">
+        <div class="y-grid" id="y-grid"></div>
+        <div class="bars" id="bars"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="chart-title">Espectro reconstruido</div>
+      <div style="flex: 1; border:1px solid var(--border); padding:14px; min-height: 0; overflow: hidden;">
+        <canvas id="spectrumCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR DERECHA (Métricas + Canales + Slider) -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Métricas de color</div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Iluminancia</div>
+          <div class="metric-value" id="lux-value">---</div>
+          <div class="metric-unit">lux</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Melanópica</div>
+          <div class="metric-value" id="medi-value">---</div>
+          <div class="metric-unit">M-EDI</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Temp. Color</div>
+          <div class="metric-value" id="CCT-value">---</div>
+          <div class="metric-unit">Kelvin</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Índice Render</div>
+          <div class="metric-value" id="Ra-value">---</div>
+          <div class="metric-unit">CRI (Ra)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canales movidos aquí -->
+    <div class="sidebar-section" style="flex: 1; overflow-y: auto; min-height: 0;">
+      <div class="sidebar-label">Canales</div>
+      <div class="channel-list" id="channel-list"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Tiempo de Integración</div>
+      <input type="range" id="integration-slider" min="10" max="500" value="100" style="width: 100%;">
+      <div id="integration-value" style="text-align: center; margin-top: 8px; font-size: 0.8rem; color: var(--text);">100 ms</div>
+    </div>
+  </div>
+
 </div>
 
 <script>
-
 
 const CHANNELS = [
   { key: 'F1', nm: '410', label: 'F1', color: 'var(--c1)' },
@@ -494,8 +525,6 @@ const CHANNELS = [
   { key: 'NIR',   nm: 'NIR', label: 'NIR', color: 'var(--cn)' },
 ];
 
-// Regex para parsear las líneas del log ESP
-// Acepta tanto:  F1 (410nm): 1234   como   CLEAR:      1234   y   NIR:        1234
 const LINE_PATTERNS = [
   { re: /F1\s*\(410nm\):\s*(\d+)/i,   key: 'F1' },
   { re: /F2\s*\(440nm\):\s*(\d+)/i,   key: 'F2' },
@@ -514,20 +543,15 @@ CHANNELS.forEach(c => values[c.key] = 0);
 
 let pendingMeasure = {};
 let port = null, reader = null;
-
 let csvData = [];
 
-// Variables para el espectro reconstruido
-let reconstructedSpectrum = Array(401).fill(0);
-let spectrumBuffer = Array(401).fill(0);
+let reconstructedSpectrum = Array(81).fill(0);
+let spectrumBuffer = Array(81).fill(0);
 let receivingSpectrum = false;
 let spectrumChart = null;
 
-const wavelengths = Array.from({ length: 401 }, (_, i) => 380 + i * 1);
+const wavelengths = Array.from({ length: 81 }, (_, i) => 380 + i * 5);
 
-
-
-// ── Build chart ──────────────────────────────────────────────────────────────
 function buildChart() {
   const barsEl = document.getElementById('bars');
   barsEl.innerHTML = '';
@@ -560,7 +584,6 @@ function buildYGrid() {
   });
 }
 
-// ── Build sidebar channel list ───────────────────────────────────────────────
 function buildChannelList() {
   const list = document.getElementById('channel-list');
   list.innerHTML = '';
@@ -576,12 +599,10 @@ function buildChannelList() {
   });
 }
 
-// ── Update chart with current values ────────────────────────────────────────
 function updateChart() {
   const vals = CHANNELS.map(c => values[c.key]);
   const maxVal = Math.max(...vals, 1);
 
-  // Y grid labels
   const steps = [0, 0.25, 0.5, 0.75, 1.0];
   steps.reverse().forEach(s => {
     const lbl = document.getElementById(`y-label-${s}`);
@@ -595,7 +616,6 @@ function updateChart() {
     const valEl = document.getElementById(`val-${ch.key}`);
     const sideEl = document.getElementById(`side-${ch.key}`);
     if (barEl) {
-      // altura relativa al contenedor — usamos calc con CSS custom property
       barEl.style.height = `calc(${pct * 100}% - 20px)`;
     }
     if (valEl) valEl.textContent = v > 0 ? v.toLocaleString() : '—';
@@ -603,7 +623,6 @@ function updateChart() {
   });
 }
 
-// ── Parse incoming serial line ───────────────────────────────────────────────
 function parseLine(line) {
   addLog(line);
 
@@ -616,97 +635,85 @@ function parseLine(line) {
     const m = line.match(p.re);
     if (m) {
       pendingMeasure[p.key] = parseInt(m[1], 10);
-	  
-      // Si completamos todos los canales, actualizar
       if (Object.keys(pendingMeasure).length === CHANNELS.length) {
         CHANNELS.forEach(c => values[c.key] = pendingMeasure[c.key] ?? 0);
         updateChart();
-		
-		// Se incluye estas tres líneas neuvas para guardar medición en un csv.
         const timestamp = new Date().toISOString();
         const row = [timestamp, ...CHANNELS.map(c => pendingMeasure[c.key] ?? 0)];
         csvData.push(row);
-		
         pendingMeasure = {};
       }
       return;
     }
   }
 
-if (line.includes("SBEGIN")) {
-  spectrumBuffer = Array(401).fill(0);
-  receivingSpectrum = true;
-  return;
-}
+  if (line.includes("SBEGIN")) {
+    spectrumBuffer = Array(81).fill(0);
+    receivingSpectrum = true;
+    return;
+  }
 
-if (line.includes("S:")) {
-  const idx = line.indexOf("S:");
-  const payload = line.substring(idx + 2).trim();
-  const parts = payload.split(",");
-
-  if (parts.length >= 2) {
-    const i = parseInt(parts[0], 10);
-    const value = parseFloat(parts[1]);
-
-    if (
-      receivingSpectrum &&
-      i >= 0 &&
-      i < 401 &&
-      !Number.isNaN(value)
-    ) {
-      spectrumBuffer[i] = value;
+  if (line.includes("S:")) {
+    const idx = line.indexOf("S:");
+    const payload = line.substring(idx + 2).trim();
+    const parts = payload.split(",");
+    if (parts.length >= 2) {
+      const i = parseInt(parts[0], 10);
+      const value = parseFloat(parts[1]);
+      if (receivingSpectrum && i >= 0 && i < 81 && !Number.isNaN(value)) {
+        spectrumBuffer[i] = value;
+      }
     }
+    return;
   }
 
-  return;
-}
-
-if (line.includes("SEND")) {
-  receivingSpectrum = false;
-  reconstructedSpectrum = spectrumBuffer.slice();
-  drawSpectrum();
-  return;
-}
-
-
-if (line.includes("LUX:")) {
-  const idx = line.indexOf("LUX:");
-  const lux = parseFloat(line.substring(idx + 4));
-
-  if (!Number.isNaN(lux)) {
-    document.getElementById("lux-value").textContent = lux.toFixed(1);
+  if (line.includes("SEND")) {
+    receivingSpectrum = false;
+    reconstructedSpectrum = spectrumBuffer.slice();
+    drawSpectrum();
+    return;
   }
 
-  return;
-}
-
-if (line.includes("M-EDI:")) {
-  const idx2 = line.indexOf("M-EDI:");
-  const MEDI = parseFloat(line.substring(idx2 + 6));
-
-  if (!Number.isNaN(MEDI)) {
-    document.getElementById("medi-value").textContent = MEDI.toFixed(1);
+  if (line.includes("LUX:")) {
+    const idx = line.indexOf("LUX:");
+    const lux = parseFloat(line.substring(idx + 4));
+    if (!Number.isNaN(lux)) document.getElementById("lux-value").textContent = lux.toFixed(1);
+    return;
   }
 
-  return;
+  if (line.includes("M-EDI:")) {
+    const idx2 = line.indexOf("M-EDI:");
+    const MEDI = parseFloat(line.substring(idx2 + 6));
+    if (!Number.isNaN(MEDI)) document.getElementById("medi-value").textContent = MEDI.toFixed(1);
+    return;
+  }
+
+  if (line.includes("CCT:")) {
+    const idx3 = line.indexOf("CCT:");
+    const CCT = parseFloat(line.substring(idx3 + 4));
+    if (!Number.isNaN(CCT)) document.getElementById("CCT-value").textContent = CCT.toFixed(0);
+    return;
+  }
+
+  if (line.includes("Ra:")) {
+    const idx4 = line.indexOf("Ra:");
+    const Ra = parseFloat(line.substring(idx4 + 3));
+    if (!Number.isNaN(Ra)) document.getElementById("Ra-value").textContent = Ra.toFixed(0);
+    return;
+  }
 }
 
-}
-
-// ── Log ──────────────────────────────────────────────────────────────────────
 const logEl = document.getElementById('log');
 function addLog(text, type = '') {
   const line = document.createElement('div');
   line.className = 'log-line' + (type ? ' ' + type : '');
   line.textContent = text;
   logEl.appendChild(line);
-  // Keep last 300 lines
   while (logEl.children.length > 300) logEl.removeChild(logEl.firstChild);
   logEl.scrollTop = logEl.scrollHeight;
 }
 function clearLog() { logEl.innerHTML = ''; }
 
-// ── Web Serial ───────────────────────────────────────────────────────────────
 const btnConnect    = document.getElementById('btn-connect');
 const btnDisconnect = document.getElementById('btn-disconnect');
 const dot           = document.getElementById('dot');
@@ -756,7 +763,7 @@ async function readLoop() {
       if (done) break;
       buffer += value;
       const lines = buffer.split('\n');
-      buffer = lines.pop(); // last incomplete line stays in buffer
+      buffer = lines.pop();
       for (const line of lines) {
         const clean = line.replace(/\r/g, '').trim();
         if (clean) parseLine(clean);
@@ -768,14 +775,11 @@ async function readLoop() {
   setStatus('');
 }
 
-// ── Check serial support ─────────────────────────────────────────────────────
 if (!('serial' in navigator)) {
   document.getElementById('no-serial').style.display = 'block';
   btnConnect.disabled = true;
   btnConnect.textContent = 'No soportado';
 }
-
-//-- Función agregada para cambiar el valor del tiempo de integración ----- Edit By DPM 
 
 const slider = document.getElementById('integration-slider');
 const sliderValue = document.getElementById('integration-value');
@@ -783,52 +787,39 @@ const sliderValue = document.getElementById('integration-value');
 slider.addEventListener('input', async () => {
   const val = slider.value;
   sliderValue.textContent = val + ' ms';
-
-  // 👉 enviar por serial
   if (port && port.writable) {
     const writer = port.writable.getWriter();
-    const cmd = `INT:${val}\n`;  // formato simple
+    const cmd = `INT:${val}\n`;
     await writer.write(new TextEncoder().encode(cmd));
     writer.releaseLock();
   }
 });
 
-// ── Init ─────────────────────────────────────────────────────────────────────
 buildChart();
 buildChannelList();
 updateChart();
 initSpectrumChart();
 drawSpectrum();
 
-// En teoría, esta parte del código debería permitir descargar el CSV de los datos, una vez da clic en el botón..... ¿Por qué no lo está haciendo?
-
 document.getElementById('btn-download').addEventListener('click', () => {
   if (csvData.length === 0){
-	alert("No hay datos aún");
-	return;
-	}
-
+    alert("No hay datos aún");
+    return;
+  }
   const header = ['timestamp', ...CHANNELS.map(c => c.key)];
   const rows = [header, ...csvData];
-
   const csvContent = rows.map(r => r.join(',')).join('\n');
-
   const blob = new Blob([csvContent], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement('a');
   a.href = url;
   a.download = 'spectral_data.csv';
   a.click();
-
   URL.revokeObjectURL(url);
 });
 
-//
-
 function initSpectrumChart() {
   const ctx = document.getElementById("spectrumCanvas").getContext("2d");
-
   spectrumChart = new Chart(ctx, {
     type: "line",
     data: {
@@ -850,39 +841,27 @@ function initSpectrumChart() {
       animation: false,
       scales: {
         x: {
-          title: {
-            display: true,
-            text: "Longitud de onda (nm)",
-            color: "#c8c8e0"
-          },
+          title: { display: true, text: "Longitud de onda (nm)", color: "#c8c8e0" },
           ticks: { color: "#555570", maxTicksLimit: 9 },
           grid: { color: "#1e1e2e" }
         },
         y: {
-          title: {
-            display: true,
-            text: "Intensidad reconstruida",
-            color: "#c8c8e0"
-          },
+          title: { display: true, text: "Intensidad reconstruida", color: "#c8c8e0" },
           beginAtZero: true,
           ticks: { color: "#555570" },
           grid: { color: "#1e1e2e" }
         }
       },
-      plugins: {
-        legend: { display: false }
-      }
+      plugins: { legend: { display: false } }
     }
   });
 }
 
 function drawSpectrum() {
   if (!spectrumChart) return;
-
   spectrumChart.data.datasets[0].data = reconstructedSpectrum;
   spectrumChart.update("none");
 }
-
 
 </script>
 </body>
