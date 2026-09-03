@@ -11,6 +11,7 @@ esphome:
   name: espectrometro-as7341
   includes:
    - lib/Constantes.h
+   - lib/calculoCircadiano.h
    - lib/procesarEspectro.h
    - lib/calculoColorimetria.h
    - lib/calculoColorimetria.cpp
@@ -35,18 +36,31 @@ sensor:
     update_interval: 500ms
     lux:
       name: "lux"
+      id: sensor_lux
     medi:
       name: "Melanopic EDI"
+      id: sensor_medi
     cct:
       name: "CCT"
+      id: sensor_cct
     duv:
       name: "Duv"
+      id: sensor_duv
     x:
       name: "Chromaticity x"
+      id: sensor_cie_x
     y:
       name: "Chromaticity y"
+      id: sensor_cie_y
     ra:
       name: "CRI Ra"
+      id: sensor_ra
+    CLa:
+      name: "CLa"
+      id: sensor_CLa
+    CS:
+      name: "CS"
+      id: sensor_CS
 
 logger:
   level: DEBUG # Options: NONE, ERROR, WARN, INFO, DEBUG, VERBOSE, VERY_VERBOSE
@@ -68,15 +82,13 @@ wifi:
   power_save_mode: none
 
   ap:
-    ssid: !secret wifi_ssid
-    password: "12345678"
+  #  ssid: !secret wifi_ssid
+  #  password: "12345678"
 
-  captive_portal:
+captive_portal:
   
-  api:
-  encryption:
-    key: th34VV1JV2tb7dly1/vjL7AGcPj2qQvG4G2r+lUss+I=
+api:
 
-  ota:
-    - platform: esphome
-      password: "tu_password_ota
+ota:
+  - platform: esphome
+    password: "tu_password_ota"

@@ -27,6 +27,8 @@ CONF_MEDI = "medi"
 CONF_CCT = "cct"
 CONF_DUV = "duv"
 CONF_RA = "ra"
+CONF_CLA = "CLa"
+CONF_CS = "CS"
 
 CONFIG_SCHEMA = (
     cv.Schema(
@@ -64,6 +66,14 @@ CONFIG_SCHEMA = (
                 accuracy_decimals=0,
                 state_class=STATE_CLASS_MEASUREMENT,
             ),
+            cv.Optional(CONF_CLA): sensor.sensor_schema(
+                            accuracy_decimals=1,
+                            state_class=STATE_CLASS_MEASUREMENT,
+                        ),
+            cv.Optional(CONF_CS): sensor.sensor_schema(
+                            accuracy_decimals=3,
+                            state_class=STATE_CLASS_MEASUREMENT,
+                        ),
         }
     )
     .extend(i2c.i2c_device_schema(0x39))
@@ -104,3 +114,9 @@ async def to_code(config):
     if ra_config := config.get(CONF_RA):
         sens = await sensor.new_sensor(ra_config)
         cg.add(var.set_ra_sensor(sens))
+    if cla_config := config.get(CONF_CLA):
+            sens = await sensor.new_sensor(cla_config)
+            cg.add(var.set_cla_sensor(sens))
+    if cs_config := config.get(CONF_CS):
+            sens = await sensor.new_sensor(cs_config)
+            cg.add(var.set_cs_sensor(sens))

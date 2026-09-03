@@ -14,6 +14,7 @@
 #include "Constantes.h" //Matriz de Calibración Calculada y V_lambda. Edit By DPM
 #include "procesarEspectro.h" //Aquí es donde debería ocurrir la mágia. Edit By DPM
 
+#include "calculoCircadiano.h" // Se incluye biblioteca para cálculos Circadianos. Edit By DPM
 #include "calculoColorimetria.h" // Se incluye biblioteca para cálculos colorimétricos. Edit By DPM
 
 #include "esphome/core/application.h"
@@ -613,6 +614,8 @@ void AS7341Component::update() {
 
   float MEDI = calcularMEDI(espectro); // Función para el cálculo del M-EDI. Ver procesarEspectro.h
 
+  CircadianResult circ =calcular_estimulo_circadiano(espectro,lux); // Función para el cálculo de CLa y CS. Ver calculoCircadiano.h
+
   ColorimetryResult c = calcular_colorimetria(espectro); // Cálculos de colorimetría. Ver calculoColorimetria.cpp
 
   //Envío de los valores calculados por puerto Serie
@@ -633,7 +636,7 @@ void AS7341Component::update() {
   /*=======================================================================
   |   Envío del espectro para lectura en el HTML. 
   |   Tocó partirlo para no tener problema por la cadena taaaaaaaaan larga
-  */=======================================================================
+  =======================================================================*/
   
 
   ESP_LOGI(TAG, "SBEGIN");
@@ -648,14 +651,16 @@ void AS7341Component::update() {
   ESP_LOGI(TAG, "Duv:%.3f", c.Duv);
   ESP_LOGI(TAG, "x:%.3f", c.x);
   ESP_LOGI(TAG, "y:%.3f", c.y);
-  ESP_LOGI(TAG, "Ra:%.0f", c.Ra);;
+  ESP_LOGI(TAG, "Ra:%.0f", c.Ra);
+  ESP_LOGI(TAG, "CLa:%.1f", circ.CLa); //Envío de la Luz Circadiana calculada. By DPM
+  ESP_LOGI(TAG, "CS:%.3f", circ.CS); //Envío del Estímulo Circadiano calculada. By DPM
 
   /*======================================================================================================
   |   Lo siguiente es para almacenar los valores calculados y usarlos en el ESPHome. 
   |   Se envía únicamente los datos que creo que se van a usar más adelante.
   |   Si se requieren valores adicionales, se debe declarar los sensores y sus variables correspondientes
   |      en sensores.py, en el YAML y demás lugares que se requiera.   
-  */======================================================================================================
+  ======================================================================================================*/
 
   if(lux_sensor_ != nullptr) lux_sensor_->publish_state(lux);
   if (medi_sensor_ != nullptr) medi_sensor_->publish_state(MEDI);
@@ -664,6 +669,8 @@ void AS7341Component::update() {
   if (x_sensor_ != nullptr) x_sensor_->publish_state(c.x);
   if (y_sensor_ != nullptr) y_sensor_->publish_state(c.y);
   if (ra_sensor_ != nullptr) ra_sensor_->publish_state(c.Ra);
+  if (cla_sensor_ != nullptr) cla_sensor_->publish_state(circ.CLa);
+  if (cs_sensor_ != nullptr) cs_sensor_->publish_state(circ.CS);
 
 
   this->logMeasurement(measuredData);

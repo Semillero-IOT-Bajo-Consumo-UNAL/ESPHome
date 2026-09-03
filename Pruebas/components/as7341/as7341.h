@@ -54,6 +54,8 @@ class AS7341Component : public PollingComponent,
   void set_x_sensor(sensor::Sensor *s) { x_sensor_ = s; }
   void set_y_sensor(sensor::Sensor *s) { y_sensor_ = s; }
   void set_ra_sensor(sensor::Sensor *s) { ra_sensor_ = s; }
+  void set_cla_sensor(sensor::Sensor *s) { cla_sensor_ = s; }
+  void set_cs_sensor(sensor::Sensor *s) { cs_sensor_ = s; }
 
 protected:
   uart::UARTComponent *parent_uart_{nullptr};
@@ -65,6 +67,8 @@ protected:
   sensor::Sensor *x_sensor_{nullptr};
   sensor::Sensor *y_sensor_{nullptr};
   sensor::Sensor *ra_sensor_{nullptr};
+  sensor::Sensor *cla_sensor_{nullptr};
+  sensor::Sensor *cs_sensor_{nullptr};
 
  private:
   short checkPowerOn();
